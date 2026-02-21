@@ -1,36 +1,43 @@
 import React, { useRef, useEffect } from 'react';
 import { StyleSheet, View, Platform, Animated } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { LayoutDashboard, Users, MessageSquare, UserCircle } from 'lucide-react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { LayoutDashboard, Users, MessageSquare, UserCircle, Sparkles } from 'lucide-react-native';
 import DashboardScreen from '../screens/DashboardScreen';
 import PatientListScreen from '../screens/PatientListScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import ConversationsScreen from '../screens/ConversationsScreen';
+import ConversationsNavigator from './ConversationsNavigator';
 import { useTheme } from '../theme/ThemeContext';
 import { useChat } from '../components/Chat/ChatContext';
 
 const Tab = createBottomTabNavigator();
 
-// ── Nyra AI FAB icon — plays branded video, no controls ────────────────────
-const NYRA_VIDEO_URL = 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4';
-
+// ── Nyra AI FAB icon — Pure Animated Pulsing Icon ────────────────────
 const NyraFabIcon = () => {
-    const videoRef = useRef(null);
+    const pulse = useRef(new Animated.Value(1)).current;
+    const rotate = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulse, { toValue: 1.15, duration: 1000, useNativeDriver: true }),
+                Animated.timing(pulse, { toValue: 1, duration: 1000, useNativeDriver: true }),
+            ])
+        ).start();
+
+        Animated.loop(
+            Animated.timing(rotate, { toValue: 1, duration: 10000, useNativeDriver: true })
+        ).start();
+    }, []);
+
+    const spin = rotate.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg']
+    });
 
     return (
-        <View style={styles.fabVideoWrapper}>
-            <Video
-                ref={videoRef}
-                source={{ uri: NYRA_VIDEO_URL }}
-                style={styles.fabVideo}
-                resizeMode={ResizeMode.COVER}
-                isLooping
-                isMuted
-                shouldPlay
-                useNativeControls={false}
-            />
-        </View>
+        <Animated.View style={{ transform: [{ scale: pulse }, { rotate: spin }] }}>
+            <Sparkles size={28} color="#fff" />
+        </Animated.View>
     );
 };
 
@@ -80,7 +87,7 @@ const TabNavigator = () => {
                 options={{
                     tabBarLabel: () => null,
                     tabBarIcon: () => (
-                        <View style={[styles.fab, { borderColor: colors.primary }]}>
+                        <View style={[styles.fab, { backgroundColor: colors.primary }]}>
                             <NyraFabIcon />
                         </View>
                     ),
@@ -93,7 +100,13 @@ const TabNavigator = () => {
                 }}
             />
 
-            <Tab.Screen name="Chat" component={ConversationsScreen} />
+            <Tab.Screen
+                name="Chat"
+                component={ConversationsNavigator}
+                options={{
+                    headerShown: false,
+                }}
+            />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
@@ -101,33 +114,23 @@ const TabNavigator = () => {
 
 const styles = StyleSheet.create({
     fab: {
-        width: 62,
-        height: 62,
-        borderRadius: 31,
-        overflow: 'hidden',
-        borderWidth: 3,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
         marginBottom: Platform.OS === 'ios' ? 0 : 10,
-        marginTop: -28,
+        marginTop: -25,
         ...Platform.select({
             ios: {
                 shadowColor: '#7c3aed',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.55,
-                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.45,
+                shadowRadius: 10,
             },
-            android: { elevation: 14 },
-            web: { boxShadow: '0 8px 24px rgba(124,58,237,0.55)' },
+            android: { elevation: 10 },
+            web: { boxShadow: '0 6px 15px rgba(124,58,237,0.45)' },
         }),
-    },
-    fabVideoWrapper: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 31,
-        overflow: 'hidden',
-    },
-    fabVideo: {
-        width: '100%',
-        height: '100%',
     },
 });
 

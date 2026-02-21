@@ -11,6 +11,10 @@ import ModuleScreen from '../screens/ModuleScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AppointmentsScreen from '../screens/AppointmentsScreen';
 import DoctorsNavigator from './DoctorsNavigator';
+import ConversationsNavigator from './ConversationsNavigator';
+import LiveCallsScreen from '../screens/LiveCallsScreen';
+import FollowUpScreen from '../screens/FollowUpScreen';
+import ReminderCallsScreen from '../screens/ReminderCallsScreen';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import {
@@ -27,7 +31,9 @@ import {
     ShieldCheck,
     Building2,
     Bell,
-    MessageSquare
+    MessageSquare,
+    PhoneOutgoing,
+    History,
 } from 'lucide-react-native';
 
 const Drawer = createDrawerNavigator();
@@ -121,8 +127,7 @@ const DrawerNavigator = () => {
             {/* NyraAI Section */}
             <Drawer.Screen
                 name="LiveCalls"
-                component={ModuleScreen}
-                initialParams={{ title: 'Live Calls', icon: 'PhoneCall' }}
+                component={LiveCallsScreen}
                 options={{
                     title: 'Live Calls',
                     drawerIcon: ({ color, size }) => <PhoneCall size={size} color={color} />
@@ -131,11 +136,28 @@ const DrawerNavigator = () => {
 
             <Drawer.Screen
                 name="FollowUp"
-                component={ModuleScreen}
-                initialParams={{ title: 'Follow Up', icon: 'MessageSquare' }}
+                component={FollowUpScreen}
                 options={{
                     title: 'Follow Up',
+                    drawerIcon: ({ color, size }) => <PhoneOutgoing size={size} color={color} />
+                }}
+            />
+
+            <Drawer.Screen
+                name="Conversations"
+                component={ConversationsNavigator}
+                options={{
+                    title: 'Conversations',
                     drawerIcon: ({ color, size }) => <MessageSquare size={size} color={color} />
+                }}
+            />
+
+            <Drawer.Screen
+                name="ReminderCalls"
+                component={ReminderCallsScreen}
+                options={{
+                    title: 'Reminder Calls',
+                    drawerIcon: ({ color, size }) => <Bell size={size} color={color} />
                 }}
             />
 
