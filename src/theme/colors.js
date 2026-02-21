@@ -1,0 +1,61 @@
+export const lightPalette = {
+    primary: 'hsl(198, 55%, 42%)',
+    primaryForeground: 'hsl(0, 0%, 100%)',
+    background: 'hsl(0, 0%, 100%)',
+    foreground: 'hsl(210, 25%, 12%)',
+    card: 'hsl(0, 0%, 99%)',
+    cardForeground: 'hsl(210, 25%, 12%)',
+    cardBorder: 'hsl(210, 16%, 93%)',
+    sidebar: 'hsl(0, 0%, 98%)',
+    sidebarForeground: 'hsl(210, 25%, 12%)',
+    sidebarPrimary: 'hsl(198, 55%, 42%)',
+    sidebarAccent: 'hsl(198, 55%, 42%)',
+    border: 'hsl(210, 18%, 90%)',
+    popover: 'hsl(0, 0%, 98%)',
+    secondary: 'hsl(200, 18%, 92%)',
+    secondaryForeground: 'hsl(210, 25%, 15%)',
+    muted: 'hsl(210, 14%, 93%)',
+    mutedForeground: 'hsl(210, 12%, 38%)',
+    accentSoft: 'hsl(198, 30%, 94%)',
+    accentForeground: 'hsl(198, 55%, 32%)',
+    destructive: 'hsl(0, 72%, 45%)',
+    destructiveForeground: 'hsl(0, 0%, 100%)',
+    input: 'hsl(210, 14%, 78%)',
+    ring: 'hsl(198, 55%, 42%)',
+};
+
+export const darkPalette = {
+    background: 'hsl(0, 0%, 3%)',
+    foreground: 'hsl(210, 12%, 95%)',
+    card: 'hsl(0, 0%, 6%)',
+    cardBorder: 'hsl(210, 14%, 14%)',
+    sidebar: 'hsl(0, 0%, 5%)',
+    sidebarBorder: 'hsl(210, 14%, 16%)',
+    sidebarPrimary: 'hsl(198, 55%, 52%)',
+    sidebarAccent: 'hsl(198, 55%, 52%)',
+    primary: 'hsl(198, 55%, 50%)',
+    border: 'hsl(210, 14%, 18%)',
+    popover: 'hsl(0, 0%, 8%)',
+    secondary: 'hsl(0, 0%, 12%)',
+    muted: 'hsl(210, 12%, 20%)',
+    mutedForeground: 'hsl(210, 10%, 68%)',
+    accentSoft: 'hsl(198, 25%, 18%)',
+    accentForeground: 'hsl(198, 55%, 75%)',
+    destructive: 'hsl(0, 65%, 50%)',
+    input: 'hsl(210, 12%, 28%)',
+    ring: 'hsl(198, 55%, 52%)',
+};
+
+export const glassLightTheme = {
+    glassBg: 'rgba(255, 255, 255, 0.1)',
+    glassBorder: 'rgba(255, 255, 255, 0.2)',
+    glassCardBg: 'rgba(255, 255, 255, 0.2)',
+    glassCardBorder: 'rgba(255, 255, 255, 0.4)',
+};
+
+export const glassDarkTheme = {
+    glassBg: 'rgba(15, 23, 42, 0.45)',
+    glassBorder: 'rgba(255, 255, 255, 0.1)',
+    glassCardBg: 'rgba(30, 41, 59, 0.45)',
+    glassCardBorder: 'rgba(255, 255, 255, 0.12)',
+};
