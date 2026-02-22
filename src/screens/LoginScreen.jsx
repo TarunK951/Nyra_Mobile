@@ -1,20 +1,90 @@
-import React, { useState } from 'react';
+// ─── iOS 26 Liquid Glass Login Screen ───────────────────────────
+import React, { useState, useRef, useEffect } from 'react';
 import {
-    StyleSheet,
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Image,
-    SafeAreaView,
-    StatusBar
+    StyleSheet, View, Text, TextInput, TouchableOpacity,
+    ActivityIndicator, KeyboardAvoidingView, Platform,
+    StatusBar, Animated, Dimensions,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
-import { Mail, Lock, Phone, ChevronRight } from 'lucide-react-native';
+import LiquidButton from '../components/LiquidButton';
+import LiquidGlass from '../components/LiquidGlass';
+import { Mail, Lock, ArrowRight, Bot, UserCheck } from 'lucide-react-native';
+import { useFadeIn, useSlideUp, useStagger, useScalePressAnim, SPRING } from '../utils/animations';
+
+const { width: W, height: H } = Dimensions.get('window');
+
+// ── Floating glass orb decoration ────────────────────────────────
+const Orb = ({ x, y, size, color, delay, duration = 6000 }) => {
+    const anim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        const t = setTimeout(() => {
+            Animated.loop(Animated.sequence([
+                Animated.timing(anim, { toValue: 1, duration, useNativeDriver: true }),
+                Animated.timing(anim, { toValue: 0, duration, useNativeDriver: true }),
+            ])).start();
+        }, delay);
+        return () => clearTimeout(t);
+    }, []);
+    const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
+    const scale = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.1, 1] });
+    return (
+        <Animated.View style={[styles.orb, {
+            left: x, top: y, width: size, height: size, borderRadius: size / 2,
+            backgroundColor: color, transform: [{ translateY }, { scale }],
+            opacity: 0.15,
+        }]} />
+    );
+};
+
+// ── Animated glass input ─────────────────────────────────────────
+const GlassInput = ({ icon: Icon, value, onChangeText, placeholder, secureTextEntry, keyboardType, colors, anim }) => {
+    const [focused, setFocused] = useState(false);
+    const borderAnim = useRef(new Animated.Value(0)).current;
+
+    const onFocus = () => {
+        setFocused(true);
+        Animated.spring(borderAnim, { toValue: 1, ...SPRING.snappy }).start();
+    };
+    const onBlur = () => {
+        setFocused(false);
+        Animated.spring(borderAnim, { toValue: 0, ...SPRING.gentle }).start();
+    };
+
+    const borderColor = borderAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [colors.glass.border, colors.primary],
+    });
+
+    return (
+        <Animated.View style={anim ? { borderColor, borderWidth: 1.5, borderRadius: 20, marginBottom: 14, opacity: anim.opacity, transform: [{ translateY: anim.translateY }] } : { borderColor, borderWidth: 1.5, borderRadius: 20, marginBottom: 14 }}>
+            <LiquidGlass
+                intensity={colors.glass.blurStrong}
+                tint={colors.glass.tint}
+                padding={0}
+                style={styles.inputBlur}
+                containerStyle={{ borderRadius: 20 }}
+            >
+                <View style={[styles.inputIcon, { backgroundColor: focused ? colors.primary + '15' : 'transparent' }]}>
+                    <Icon size={18} color={focused ? colors.primary : colors.mutedForeground} strokeWidth={2.5} />
+                </View>
+                <TextInput
+                    style={[styles.input, { color: colors.foreground }]}
+                    value={value}
+                    onChangeText={onChangeText}
+                    placeholder={placeholder}
+                    placeholderTextColor={colors.mutedForeground}
+                    secureTextEntry={secureTextEntry}
+                    keyboardType={keyboardType}
+                    autoCapitalize="none"
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                />
+            </LiquidGlass>
+        </Animated.View>
+    );
+};
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -24,245 +94,188 @@ const LoginScreen = () => {
     const { login } = useAuth();
     const { colors, themeMode } = useTheme();
 
+    const headerOpacity = useFadeIn(0);
+    const staggerAnims = useStagger(5, 100);
+    const { scale: btnScale, pressIn, pressOut } = useScalePressAnim();
+
+    const logoRotate = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        Animated.loop(
+            Animated.timing(logoRotate, { toValue: 1, duration: 30000, useNativeDriver: true })
+        ).start();
+    }, []);
+    const spin = logoRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
     const handleLogin = async () => {
-        if (!email || !password) {
-            setError('Please fill in all fields');
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-
+        if (!email || !password) { setError('Please fill in all fields'); return; }
+        setLoading(true); setError('');
         const result = await login({ email, password });
-
-        if (!result.success) {
-            setError(result.error);
-        }
+        if (!result.success) setError(result.error || 'Login failed');
         setLoading(false);
     };
 
+    // Background gradient orbs — More liquid glass feel
+    const orbs = [
+        { x: -100, y: -100, size: 300, color: colors.primary, delay: 0 },
+        { x: W - 150, y: 150, size: 250, color: '#a855f7', delay: 1000 },
+        { x: W / 2 - 150, y: H - 350, size: 300, color: colors.primary, delay: 500 },
+        { x: -50, y: H - 150, size: 200, color: '#3b82f6', delay: 2000 },
+    ];
+
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.screen, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'} />
+
+            {/* Floating orb decorations */}
+            {orbs.map((o, i) => <Orb key={i} {...o} />)}
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.inner}
+                style={styles.kav}
             >
-                <View style={styles.logoContainer}>
-                    <View style={[styles.logoWrapper, { backgroundColor: colors.accentSoft }]}>
-                        <Image
-                            source={{ uri: 'https://nyraai-main-website.vercel.app/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo.c1949d52.png&w=64&q=75' }}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
+                {/* Logo / Header */}
+                <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
+                    <BlurView
+                        intensity={40}
+                        tint={colors.glass.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.logoBox, { borderColor: colors.glass.border }]}
+                    >
+                        <View style={styles.logoGlow} />
+                        <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                            <Bot size={38} color={colors.primary} strokeWidth={2.5} />
+                        </Animated.View>
+                    </BlurView>
+                    <Text style={[styles.title, { color: colors.foreground }]}>NyraAI</Text>
+                    <View style={styles.badgeRow}>
+                        <View style={[styles.statusBadge, { backgroundColor: colors.primary + '15' }]}>
+                            <UserCheck size={10} color={colors.primary} strokeWidth={3} />
+                            <Text style={[styles.statusText, { color: colors.primary }]}>SECURE ACCESS</Text>
+                        </View>
                     </View>
-                    <Text style={[styles.title, { color: colors.foreground }]}>NYRAAI</Text>
-                    <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Clinic Management System</Text>
-                </View>
+                    <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                        Clinical workflow, reimagined for modern doctors.
+                    </Text>
+                </Animated.View>
 
-                <View style={styles.form}>
+                {/* Glass login card */}
+                <LiquidGlass
+                    intensity={colors.glass.blurStrong}
+                    tint={colors.glass.tint}
+                    style={{ padding: 30 }}
+                    containerStyle={styles.card}
+                >
+                    <View style={styles.cardGlow} />
+
                     {error ? (
-                        <View style={[styles.errorBox, { backgroundColor: colors.destructive + '15' }]}>
-                            <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+                        <View style={styles.errorBox}>
+                            <Text style={styles.errorText}>{error}</Text>
                         </View>
                     ) : null}
 
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.foreground }]}>Email or Phone</Text>
-                        <View style={[styles.inputWrapper, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                            <Mail size={18} color={colors.mutedForeground} style={styles.inputIcon} />
-                            <TextInput
-                                style={[styles.input, { color: colors.foreground }]}
-                                placeholder="Enter your email"
-                                placeholderTextColor={colors.mutedForeground}
-                                value={email}
-                                onChangeText={(val) => { setEmail(val); setError(''); }}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                            />
-                        </View>
-                    </View>
+                    <GlassInput
+                        icon={Mail}
+                        value={email}
+                        onChangeText={(v) => { setEmail(v); setError(''); }}
+                        placeholder="doctor@clinic.com"
+                        colors={colors}
+                        anim={staggerAnims[0]}
+                    />
 
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
-                        <View style={[styles.inputWrapper, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                            <Lock size={18} color={colors.mutedForeground} style={styles.inputIcon} />
-                            <TextInput
-                                style={[styles.input, { color: colors.foreground }]}
-                                placeholder="Enter your password"
-                                placeholderTextColor={colors.mutedForeground}
-                                value={password}
-                                onChangeText={(val) => { setPassword(val); setError(''); }}
-                                secureTextEntry
-                            />
-                        </View>
-                    </View>
+                    <GlassInput
+                        icon={Lock}
+                        value={password}
+                        onChangeText={(v) => { setPassword(v); setError(''); }}
+                        placeholder="••••••••"
+                        secureTextEntry
+                        colors={colors}
+                        anim={staggerAnims[1]}
+                    />
 
-                    <TouchableOpacity
-                        style={[styles.loginButton, { backgroundColor: colors.primary }]}
+                    {/* Login button */}
+                    <LiquidButton
+                        variant="primary"
                         onPress={handleLogin}
                         disabled={loading}
+                        style={{ marginTop: 10 }}
                     >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <View style={styles.buttonContent}>
-                                <Text style={styles.loginButtonText}>Login to Dashboard</Text>
-                                <ChevronRight size={18} color="#fff" />
-                            </View>
-                        )}
-                    </TouchableOpacity>
+                        {loading
+                            ? <ActivityIndicator color={colors.background} />
+                            : <>
+                                <Text style={[styles.loginBtnText, { color: colors.background }]}>Sign Into Nyra</Text>
+                                <ArrowRight size={20} color={colors.background} strokeWidth={3} style={{ marginLeft: 10 }} />
+                            </>
+                        }
+                    </LiquidButton>
 
-                    <TouchableOpacity style={styles.forgotPassword}>
-                        <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
-                    </TouchableOpacity>
-                </View>
+                    <Animated.View style={staggerAnims[3] ? { opacity: staggerAnims[3].opacity, transform: [{ translateY: staggerAnims[3].translateY }] } : {}}>
+                        <TouchableOpacity style={styles.forgotBtn}>
+                            <Text style={[styles.forgotText, { color: colors.primary }]}>
+                                Need help? Contact your Admin
+                            </Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+                </LiquidGlass>
 
-                <View style={styles.footer}>
+                {/* Footer */}
+                <Animated.View style={[styles.footer, { opacity: headerOpacity }]}>
                     <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
-                        By logging in, you agree to our Terms and Privacy Policy.
+                        Enterprise-grade security for healthcare data
                     </Text>
-                </View>
+                </Animated.View>
             </KeyboardAvoidingView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    inner: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 30,
-    },
-    logoContainer: {
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    logoWrapper: {
-        width: 64,
-        height: 64,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
+    screen: { flex: 1, overflow: 'hidden' },
+    kav: { flex: 1, paddingHorizontal: 28, justifyContent: 'center', gap: 32 },
+    orb: { position: 'absolute', opacity: 0.4 },
+    header: { alignItems: 'center', gap: 12, marginBottom: 4 },
+    logoBox: {
+        width: 84, height: 84, borderRadius: 30,
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 1.5, overflow: 'hidden',
         ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-            },
-            android: {
-                elevation: 4,
-            },
-            web: {
-                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-            }
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 24 },
+            android: { elevation: 12 },
         }),
     },
-    logo: {
-        width: 40,
-        height: 40,
-    },
-    title: {
-        fontSize: 26,
-        fontWeight: '800',
-        letterSpacing: 1,
-    },
-    subtitle: {
-        fontSize: 14,
-        marginTop: 6,
-    },
-    form: {
-        width: '100%',
-    },
-    errorBox: {
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 20,
-        alignItems: 'center',
-    },
-    errorText: {
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        height: 52,
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-    },
-    loginButton: {
-        borderRadius: 12,
-        height: 52,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 10,
+    logoGlow: { position: 'absolute', width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.15)', blurRadius: 20 },
+    title: { fontSize: 44, fontWeight: '900', letterSpacing: -2, marginBottom: -4 },
+    badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 },
+    statusText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+    subtitle: { fontSize: 15, fontWeight: '600', textAlign: 'center', maxWidth: '80%', lineHeight: 22 },
+    card: {
+        borderRadius: 36, borderWidth: 1.5, overflow: 'hidden',
+        padding: 30,
         ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 5,
-            },
-            web: {
-                boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-            }
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.18, shadowRadius: 36 },
+            android: { elevation: 12 },
         }),
     },
-    buttonContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, zIndex: 10, opacity: 0.8 },
+    cardGlow: { position: 'absolute', top: -100, left: -100, width: 200, height: 200, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 100 },
+    inputBlur: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 60, gap: 14 },
+    inputIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+    input: { flex: 1, fontSize: 17, fontWeight: '700' },
+    errorBox: { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: 16, padding: 14, marginBottom: 18, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
+    errorText: { color: '#ef4444', fontSize: 13, fontWeight: '700' },
+    loginBtn: {
+        borderRadius: 20, height: 60,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16 },
+            android: { elevation: 8 },
+        }),
     },
-    loginButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '700',
-        marginRight: 8,
-    },
-    forgotPassword: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    forgotPasswordText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 40,
-        left: 30,
-        right: 30,
-        alignItems: 'center',
-    },
-    footerText: {
-        fontSize: 12,
-        textAlign: 'center',
-    },
+    loginBtnText: { fontSize: 17, fontWeight: '900', letterSpacing: -0.2 },
+    forgotBtn: { alignItems: 'center', marginTop: 20 },
+    forgotText: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, opacity: 0.6 },
+    footer: { alignItems: 'center', marginTop: 12 },
+    footerText: { fontSize: 12, fontWeight: '700', textAlign: 'center', opacity: 0.4, letterSpacing: 0.5 },
 });
 
 export default LoginScreen;

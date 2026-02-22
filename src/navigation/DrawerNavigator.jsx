@@ -5,13 +5,15 @@ import {
     DrawerItemList,
     DrawerItem
 } from '@react-navigation/drawer';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
 import TabNavigator from './TabNavigator';
 import ModuleScreen from '../screens/ModuleScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import AppointmentsScreen from '../screens/AppointmentsScreen';
+import AppointmentsNavigator from './AppointmentsNavigator';
 import DoctorsNavigator from './DoctorsNavigator';
 import ConversationsNavigator from './ConversationsNavigator';
+import LiquidGlass from '../components/LiquidGlass';
 import LiveCallsScreen from '../screens/LiveCallsScreen';
 import FollowUpScreen from '../screens/FollowUpScreen';
 import ReminderCallsScreen from '../screens/ReminderCallsScreen';
@@ -43,9 +45,15 @@ const CustomDrawerContent = (props) => {
     const { colors } = useTheme();
 
     return (
-        <DrawerContentScrollView {...props} style={{ backgroundColor: colors.card }}>
-            <View style={styles.drawerHeader}>
-                <View style={[styles.logoSquare, { backgroundColor: colors.accentSoft }]}>
+        <DrawerContentScrollView {...props} style={{ backgroundColor: colors.background }}>
+            <LiquidGlass
+                intensity={colors.glass.blur}
+                tint={colors.glass.tint}
+                containerStyle={styles.drawerHeaderBlur}
+                padding={0}
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}
+            >
+                <View style={[styles.logoSquare, { backgroundColor: colors.primary + '15' }]}>
                     <Image
                         source={{ uri: 'https://nyraai-main-website.vercel.app/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo.c1949d52.png&w=64&q=75' }}
                         style={styles.logo}
@@ -55,8 +63,8 @@ const CustomDrawerContent = (props) => {
                     <Text style={[styles.userName, { color: colors.foreground }]}>{user?.name || 'Staff'}</Text>
                     <Text style={[styles.userRole, { color: colors.mutedForeground }]}>{user?.role?.replace('_', ' ') || 'Healthcare'}</Text>
                 </View>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            </LiquidGlass>
+            <View style={[styles.divider, { backgroundColor: colors.glass.borderSubtle }]} />
             <DrawerItemList {...props} />
         </DrawerContentScrollView>
     );
@@ -94,6 +102,7 @@ const DrawerNavigator = () => {
                 component={TabNavigator}
                 options={{
                     title: 'Dashboard',
+                    headerShown: false,
                     drawerIcon: ({ color, size }) => <LayoutDashboard size={size} color={color} />
                 }}
             />
@@ -109,7 +118,7 @@ const DrawerNavigator = () => {
 
             <Drawer.Screen
                 name="Appointments"
-                component={AppointmentsScreen}
+                component={AppointmentsNavigator}
                 options={{
                     drawerIcon: ({ color, size }) => <Calendar size={size} color={color} />
                 }}
@@ -203,7 +212,7 @@ const DrawerNavigator = () => {
 
             {/* Config Section */}
             <Drawer.Screen
-                name="ProfileDrawer"
+                name="Profile"
                 component={ProfileScreen}
                 options={{
                     title: 'Settings & Profile',
@@ -216,11 +225,9 @@ const DrawerNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-    drawerHeader: {
-        padding: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
+    drawerHeaderBlur: {
+        padding: 20, flexDirection: 'row', alignItems: 'center',
+        marginBottom: 10, borderBottomWidth: 1, overflow: 'hidden',
     },
     logoSquare: {
         width: 48,

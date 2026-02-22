@@ -32,8 +32,7 @@ const socketService = {
         connectingToken = token;
 
         socket = io(BASE_URL, {
-            // Omitting 'path' uses the default /socket.io path
-            // which is what most Socket.IO servers expect
+            path: '/ws',
             auth: { token },
             transports: ['websocket', 'polling'],
             reconnection: true,

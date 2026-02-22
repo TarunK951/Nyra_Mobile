@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { storage } from './storage';
 
-const BASE_URL = process.env.API_BASE_URL || 'https://server.nyraai.io';
+const BASE_URL = 'https://server.nyraai.io'; // Primary production endpoint
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

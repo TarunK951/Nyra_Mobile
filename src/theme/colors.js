@@ -1,61 +1,109 @@
+// ─── NyraAI Color System — Rich Deep Palette ─────────────────────
+
 export const lightPalette = {
-    primary: 'hsl(198, 55%, 42%)',
-    primaryForeground: 'hsl(0, 0%, 100%)',
-    background: 'hsl(0, 0%, 100%)',
-    foreground: 'hsl(210, 25%, 12%)',
-    card: 'hsl(0, 0%, 99%)',
-    cardForeground: 'hsl(210, 25%, 12%)',
-    cardBorder: 'hsl(210, 16%, 93%)',
-    sidebar: 'hsl(0, 0%, 98%)',
-    sidebarForeground: 'hsl(210, 25%, 12%)',
-    sidebarPrimary: 'hsl(198, 55%, 42%)',
-    sidebarAccent: 'hsl(198, 55%, 42%)',
-    border: 'hsl(210, 18%, 90%)',
-    popover: 'hsl(0, 0%, 98%)',
-    secondary: 'hsl(200, 18%, 92%)',
-    secondaryForeground: 'hsl(210, 25%, 15%)',
-    muted: 'hsl(210, 14%, 93%)',
-    mutedForeground: 'hsl(210, 12%, 38%)',
-    accentSoft: 'hsl(198, 30%, 94%)',
-    accentForeground: 'hsl(198, 55%, 32%)',
-    destructive: 'hsl(0, 72%, 45%)',
-    destructiveForeground: 'hsl(0, 0%, 100%)',
-    input: 'hsl(210, 14%, 78%)',
-    ring: 'hsl(198, 55%, 42%)',
+    // Brand — Apple Royal Blue
+    primary: '#0066FF',
+    primaryLight: '#3385FF',
+    primaryDark: '#0052CC',
+    primaryForeground: '#ffffff',
+
+    // Backgrounds — Apple System Grey
+    background: '#F2F2f7',
+    backgroundGradient: ['#ffffff', '#F2F2f7', '#F2F2f7'],
+    foreground: '#1c1c1e',
+
+    // Cards
+    card: 'rgba(255,255,255,0.7)',
+    cardForeground: '#1c1c1e',
+    cardBorder: 'rgba(0,0,0,0.05)',
+
+    // Text
+    mutedForeground: '#8e8e93',
+    secondary: '#e5e5ea',
+    secondaryForeground: '#3a3a3c',
+    muted: '#f2f2f7',
+    accentSoft: 'rgba(0,102,255,0.08)',
+    accentForeground: '#0066FF',
+
+    // Semantic
+    destructive: '#FF3B30',
+    destructiveForeground: '#ffffff',
+    border: '#d1d1d6',
+    input: '#c7c7cc',
+    ring: '#0066FF',
+
+    // Status colours
+    success: '#34C759',
+    warning: '#FF9500',
+    info: '#007AFF',
+    error: '#FF3B30',
+
+    // ── Liquid Glass Tokens ──────────────────────────────────────
+    glass: {
+        bg: 'rgba(255,255,255,0.75)',
+        bgStrong: 'rgba(255,255,255,0.92)',
+        border: 'rgba(255,255,255,1.0)',
+        borderSubtle: 'rgba(0,0,0,0.04)',
+        highlight: 'rgba(255,255,255,0.8)',
+        shimmer: 'rgba(255,255,255,0.7)',
+        tint: 'light',
+        blur: 25,
+        blurStrong: 40,
+        shadow: 'rgba(0,0,0,0.1)',
+        shadowDeep: 'rgba(0,0,0,0.15)',
+    },
 };
 
 export const darkPalette = {
-    background: 'hsl(0, 0%, 3%)',
-    foreground: 'hsl(210, 12%, 95%)',
-    card: 'hsl(0, 0%, 6%)',
-    cardBorder: 'hsl(210, 14%, 14%)',
-    sidebar: 'hsl(0, 0%, 5%)',
-    sidebarBorder: 'hsl(210, 14%, 16%)',
-    sidebarPrimary: 'hsl(198, 55%, 52%)',
-    sidebarAccent: 'hsl(198, 55%, 52%)',
-    primary: 'hsl(198, 55%, 50%)',
-    border: 'hsl(210, 14%, 18%)',
-    popover: 'hsl(0, 0%, 8%)',
-    secondary: 'hsl(0, 0%, 12%)',
-    muted: 'hsl(210, 12%, 20%)',
-    mutedForeground: 'hsl(210, 10%, 68%)',
-    accentSoft: 'hsl(198, 25%, 18%)',
-    accentForeground: 'hsl(198, 55%, 75%)',
-    destructive: 'hsl(0, 65%, 50%)',
-    input: 'hsl(210, 12%, 28%)',
-    ring: 'hsl(198, 55%, 52%)',
-};
+    // Brand — Apple Royal Blue (Lighter for Dark Mode)
+    primary: '#0A84FF',
+    primaryLight: '#409CFF',
+    primaryDark: '#0066FF',
+    primaryForeground: '#ffffff',
 
-export const glassLightTheme = {
-    glassBg: 'rgba(255, 255, 255, 0.1)',
-    glassBorder: 'rgba(255, 255, 255, 0.2)',
-    glassCardBg: 'rgba(255, 255, 255, 0.2)',
-    glassCardBorder: 'rgba(255, 255, 255, 0.4)',
-};
+    // Backgrounds — Apple Fitness Pure Black
+    background: '#000000',
+    backgroundGradient: ['#000000', '#0a0a0c', '#000000'],
+    foreground: '#ffffff',
 
-export const glassDarkTheme = {
-    glassBg: 'rgba(15, 23, 42, 0.45)',
-    glassBorder: 'rgba(255, 255, 255, 0.1)',
-    glassCardBg: 'rgba(30, 41, 59, 0.45)',
-    glassCardBorder: 'rgba(255, 255, 255, 0.12)',
+    // Cards — iOS Dark Secondary
+    card: 'rgba(28,28,30,0.7)',
+    cardForeground: '#ffffff',
+    cardBorder: 'rgba(255,255,255,0.08)',
+
+    // Text
+    mutedForeground: '#8e8e93',
+    secondary: 'rgba(255,255,255,0.1)',
+    secondaryForeground: '#d1d1d6',
+    muted: '#1c1c1e',
+    accentSoft: 'rgba(10,132,255,0.12)',
+    accentForeground: '#409CFF',
+
+    // Semantic
+    destructive: '#FF453A',
+    destructiveForeground: '#ffffff',
+    border: '#38383a',
+    input: '#3a3a3c',
+    ring: '#0A84FF',
+
+    // Status colours
+    success: '#30D158',
+    warning: '#FF9F0a',
+    info: '#0A84FF',
+    error: '#FF453A',
+
+    // ── Liquid Glass Tokens ──────────────────────────────────────
+    glass: {
+        bg: 'rgba(28,28,30,0.75)',
+        bgStrong: 'rgba(28,28,30,0.95)',
+        border: 'rgba(255,255,255,0.12)',
+        borderSubtle: 'rgba(255,255,255,0.06)',
+        highlight: 'rgba(255,255,255,0.08)',
+        shimmer: 'rgba(255,255,255,0.06)',
+        tint: 'dark',
+        blur: 35,
+        blurStrong: 55,
+        shadow: 'rgba(0,0,0,0.5)',
+        shadowDeep: 'rgba(0,0,0,1.0)',
+    },
 };

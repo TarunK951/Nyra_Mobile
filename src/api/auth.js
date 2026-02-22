@@ -7,7 +7,9 @@ export const authApi = {
     getMe: () => apiClient.get('/api/auth/me'),
     logout: () => apiClient.post('/api/auth/logout'),
     forgotPassword: (email) => apiClient.post('/api/auth/forgot-password', { email }),
-    resetPassword: (data) => apiClient.post('/api/auth/reset-password', data), // { token, newPassword, confirmPassword }
+    sendOtp: (data) => apiClient.post('/api/auth/forgot-password/send-otp', data), // { email/phone, channel: "EMAIL"|"SMS" }
+    verifyOtp: (data) => apiClient.post('/api/auth/forgot-password/verify-otp', data), // { email/phone, otp, newPassword }
+    resetPassword: (data) => apiClient.post('/api/auth/reset-password', data), // { token, newPassword }
 
     // Step 15 - Profile & Support
     updateProfile: (profileData) => apiClient.put('/api/auth/profile', profileData),

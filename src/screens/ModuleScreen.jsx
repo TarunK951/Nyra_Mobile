@@ -11,7 +11,7 @@ const ModuleScreen = ({ route }) => {
     const Icon = LucideIcons[iconName] || LucideIcons.Layout;
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.header}>
                     <View style={[styles.iconContainer, { backgroundColor: colors.accentSoft }]}>

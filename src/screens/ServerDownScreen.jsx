@@ -43,7 +43,7 @@ const ServerDownScreen = ({ onRetry }) => {
             <StatusBar barStyle={colors.isDark ? 'light-content' : 'dark-content'} />
 
             {/* Decorative grid */}
-            <View style={styles.grid} pointerEvents="none">
+            <View style={[styles.grid, { pointerEvents: 'none' }]}>
                 {Array.from({ length: 6 }).map((_, i) => (
                     <View key={i} style={[styles.gridLine, { backgroundColor: colors.cardBorder + '60' }]} />
                 ))}

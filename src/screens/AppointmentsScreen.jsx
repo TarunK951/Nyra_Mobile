@@ -1,205 +1,220 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// ─── iOS 26 Liquid Glass — Appointments Screen ───────────────────
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     StyleSheet, View, Text, FlatList, ActivityIndicator,
-    TouchableOpacity, RefreshControl, TextInput
+    TouchableOpacity, RefreshControl, Platform, Animated, ScrollView,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { appointmentApi } from '../api/appointments';
-import {
-    Calendar, Clock, User, Stethoscope, ChevronRight,
-    Search, CheckCircle, XCircle, AlertCircle, Circle
-} from 'lucide-react-native';
+import { Calendar, Clock, ChevronRight, Plus, AlertCircle, CheckCircle2, XCircle, User } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
+import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
-const STATUS_CONFIG = {
-    CONFIRMED: { label: 'Confirmed', color: '#10b981', icon: CheckCircle },
-    COMPLETED: { label: 'Completed', color: '#3b82f6', icon: CheckCircle },
-    CANCELLED: { label: 'Cancelled', color: '#ef4444', icon: XCircle },
-    PENDING: { label: 'Pending', color: '#f59e0b', icon: AlertCircle },
-    SCHEDULED: { label: 'Scheduled', color: '#8b5cf6', icon: Circle },
+const FILTERS = ['All', 'Confirmed', 'Pending', 'Cancelled'];
+
+const STATUS_MAP = {
+    CONFIRMED: { icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
+    PENDING: { icon: User, color: colors => colors.primary, bg: colors => colors.primary + '12' },
+    CANCELLED: { icon: XCircle, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
+    DEFAULT: { icon: Calendar, color: '#6b7280', bg: 'rgba(107, 114, 128, 0.12)' },
 };
 
-const StatusBadge = ({ status, colors }) => {
-    const cfg = STATUS_CONFIG[status] || { label: status, color: colors.mutedForeground };
-    const IconComp = cfg.icon || Circle;
+const GlassFilterPill = ({ label, active, onPress, colors }) => {
+    const { scale, pressIn, pressOut } = useScalePressAnim();
+    const g = colors.glass;
     return (
-        <View style={[styles.badge, { backgroundColor: cfg.color + '18', borderColor: cfg.color + '40' }]}>
-            <IconComp size={11} color={cfg.color} />
-            <Text style={[styles.badgeText, { color: cfg.color }]}>{cfg.label}</Text>
-        </View>
+        <Animated.View style={{ transform: [{ scale }] }}>
+            <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1}>
+                <LiquidGlass
+                    intensity={active ? 0 : g.blur}
+                    tint={g.tint}
+                    padding={0}
+                    borderRadius={14}
+                    containerStyle={[
+                        styles.pill,
+                        {
+                            borderColor: active ? colors.primary : g.border,
+                            backgroundColor: active ? colors.primary : colors.card,
+                        }
+                    ]}
+                    style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+                >
+                    <Text style={[styles.pillText, { color: active ? '#ffffff' : colors.mutedForeground, fontWeight: active ? '800' : '600' }]}>
+                        {label}
+                    </Text>
+                </LiquidGlass>
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 
-const AppointmentCard = ({ item, colors }) => {
-    const date = item.date || item.appointmentDate || item.scheduledAt;
-    const formattedDate = date ? new Date(date).toLocaleDateString('en-IN', {
-        day: '2-digit', month: 'short', year: 'numeric'
-    }) : '—';
-    const formattedTime = date ? new Date(date).toLocaleTimeString('en-IN', {
-        hour: '2-digit', minute: '2-digit', hour12: true
-    }) : item.time || '—';
+const AppointmentCard = ({ item, index, colors, onPress, anim }) => {
+    const g = colors.glass;
+    const { scale, pressIn, pressOut } = useScalePressAnim();
 
-    const patientName = item.patient?.name || item.patientName || 'Unknown Patient';
-    const doctorName = item.doctor?.name || item.doctorName || 'Unknown Doctor';
+    const statusKey = item.status?.toUpperCase() || 'DEFAULT';
+    const S = STATUS_MAP[statusKey] || STATUS_MAP.DEFAULT;
+    const patient = item.patient || {};
+    const initials = (patient.name || item.patientName || 'P').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+    const sColor = typeof S.color === 'function' ? S.color(colors) : S.color;
+    const sBg = typeof S.bg === 'function' ? S.bg(colors) : S.bg;
 
     return (
-        <TouchableOpacity
-            activeOpacity={0.75}
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-        >
-            <View style={styles.cardLeft}>
-                <View style={[styles.avatarBox, { backgroundColor: colors.accentSoft }]}>
-                    <Calendar size={20} color={colors.primary} />
-                </View>
-            </View>
-            <View style={styles.cardBody}>
-                <Text style={[styles.patientName, { color: colors.foreground }]} numberOfLines={1}>
-                    {patientName}
-                </Text>
-                <View style={styles.row}>
-                    <Stethoscope size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.meta, { color: colors.mutedForeground }]} numberOfLines={1}>
-                        {' '}{doctorName}
-                    </Text>
-                </View>
-                <View style={styles.row}>
-                    <Clock size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.meta, { color: colors.mutedForeground }]}>
-                        {' '}{formattedDate}  {formattedTime}
-                    </Text>
-                </View>
-                <StatusBadge status={item.status} colors={colors} />
-            </View>
-            <ChevronRight size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
+        <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }, { scale }] } : { transform: [{ scale }] }}>
+            <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1}>
+                <LiquidGlass
+                    intensity={g.blur}
+                    tint={g.tint}
+                    padding={16}
+                    borderRadius={24}
+                    style={{ flexDirection: 'row', alignItems: 'center' }}
+                >
+                    {/* Left Initials/Avatar */}
+                    <View style={[styles.iconBox, { backgroundColor: sColor + '12' }]}>
+                        <Text style={[styles.initials, { color: sColor }]}>{initials}</Text>
+                    </View>
+
+                    <View style={styles.cardContent}>
+                        <View style={styles.cardHeader}>
+                            <Text style={[styles.patientName, { color: colors.foreground }]} numberOfLines={1}>
+                                {patient.name || item.patientName || 'Patient Name'}
+                            </Text>
+                            <View style={[styles.statusBadge, { backgroundColor: sBg }]}>
+                                <Text style={[styles.statusText, { color: sColor }]}>{statusKey}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.metaRow}>
+                            <View style={styles.metaItem}>
+                                <Calendar size={12} color={colors.primary} strokeWidth={2.5} />
+                                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+                                    {item.date ? new Date(item.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                                </Text>
+                            </View>
+                            <View style={styles.metaDot} />
+                            <View style={styles.metaItem}>
+                                <Clock size={12} color={colors.primary} strokeWidth={2.5} />
+                                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.time || '10:00 AM'}</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={[styles.arrowBox, { backgroundColor: colors.muted }]}>
+                        <ChevronRight size={14} color={colors.foreground} strokeWidth={3} />
+                    </View>
+                </LiquidGlass>
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 
-const FILTERS = ['All', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
-
-const AppointmentsScreen = () => {
+const AppointmentsScreen = ({ navigation }) => {
     const { colors } = useTheme();
+    const g = colors.glass;
+
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('All');
+    const [filter, setFilter] = useState('All');
     const [error, setError] = useState(null);
 
-    const fetchAppointments = useCallback(async () => {
-        setError(null);
-        try {
-            const params = {};
-            if (activeFilter !== 'All') params.status = activeFilter;
+    const filterAnim = useRef(new Animated.Value(0)).current;
+    const staggerAnims = useStagger(8, 60);
 
-            const res = await appointmentApi.getAll(params);
-            // Backend may return { appointments: [] } or [] directly
-            const raw = res.data?.appointments || res.data?.data || res.data || [];
-            setAppointments(Array.isArray(raw) ? raw : []);
-        } catch (err) {
-            console.error('AppointmentsScreen fetch error:', err?.response?.data || err.message);
-            setError(err?.response?.data?.message || 'Failed to load appointments. Check your connection or permissions.');
+    const fetchAppointments = useCallback(async () => {
+        try {
+            setError(null);
+            const res = await appointmentApi.getAll();
+            if (res?.data) {
+                const d = res.data;
+                const raw = d?.appointments || d?.data || (Array.isArray(d) ? d : []);
+                setAppointments(Array.isArray(raw) ? raw : []);
+            }
+        } catch (e) {
+            setError(e?.response?.data?.message || 'Failed to load appointments.');
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [activeFilter]);
+    }, []);
 
-    useEffect(() => {
-        setLoading(true);
-        fetchAppointments();
-    }, [fetchAppointments]);
+    useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchAppointments();
-    };
+    const onRefresh = () => { setRefreshing(true); fetchAppointments(); };
 
-    const filtered = search.trim()
-        ? appointments.filter(a => {
-            const pName = (a.patient?.name || a.patientName || '').toLowerCase();
-            const dName = (a.doctor?.name || a.doctorName || '').toLowerCase();
-            const q = search.toLowerCase();
-            return pName.includes(q) || dName.includes(q);
-        })
-        : appointments;
+    const filtered = filter === 'All'
+        ? appointments
+        : appointments.filter(a => a.status?.toUpperCase() === filter.toUpperCase());
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Search bar */}
-            <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                <Search size={18} color={colors.mutedForeground} />
-                <TextInput
-                    style={[styles.searchInput, { color: colors.foreground }]}
-                    placeholder="Search patient or doctor…"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={search}
-                    onChangeText={setSearch}
-                />
+        <View style={[styles.screen, { backgroundColor: colors.background }]}>
+            {/* Rich Apple Background Layering */}
+            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '08' }]} />
+            <View style={[styles.bgGlowSecondary, { backgroundColor: colors.error + '05' }]} />
+
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: layout.statusBarHeight + 10 }]}>
+                <View>
+                    <Text style={[styles.title, { color: colors.foreground }]}>Schedule</Text>
+                    <Text style={[styles.subtitle, { color: colors.primary }]}>Patient Appointments</Text>
+                </View>
+                <TouchableOpacity activeOpacity={0.8} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
+                    <Plus size={22} color="#fff" strokeWidth={3} />
+                </TouchableOpacity>
             </View>
 
-            {/* Status filter pills */}
-            <FlatList
-                data={FILTERS}
+            {/* Glass filter bar */}
+            <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                keyExtractor={i => i}
-                contentContainerStyle={styles.filterRow}
-                renderItem={({ item }) => {
-                    const active = activeFilter === item;
-                    return (
-                        <TouchableOpacity
-                            onPress={() => setActiveFilter(item)}
-                            style={[
-                                styles.pill,
-                                { borderColor: active ? colors.primary : colors.cardBorder },
-                                active && { backgroundColor: colors.primary }
-                            ]}
-                        >
-                            <Text style={[
-                                styles.pillText,
-                                { color: active ? '#fff' : colors.mutedForeground }
-                            ]}>
-                                {item}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                }}
-            />
+                contentContainerStyle={styles.filterBar}
+                style={{ marginBottom: 20, maxHeight: 54 }}
+            >
+                {FILTERS.map(f => (
+                    <GlassFilterPill
+                        key={f} label={f}
+                        active={filter === f}
+                        onPress={() => setFilter(f)}
+                        colors={colors}
+                    />
+                ))}
+            </ScrollView>
 
-            {/* Content */}
-            {loading ? (
+            {loading && !refreshing ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
-                        Loading appointments…
-                    </Text>
                 </View>
             ) : error ? (
                 <View style={styles.center}>
-                    <AlertCircle size={48} color="#ef4444" />
-                    <Text style={[styles.errorText, { color: '#ef4444' }]}>{error}</Text>
-                    <TouchableOpacity
-                        onPress={() => { setLoading(true); fetchAppointments(); }}
-                        style={[styles.retryBtn, { backgroundColor: colors.primary }]}
-                    >
+                    <AlertCircle size={44} color={colors.error} opacity={0.5} />
+                    <Text style={[styles.errorText, { color: colors.mutedForeground }]}>{error}</Text>
+                    <TouchableOpacity onPress={onRefresh} style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
                         <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
                     data={filtered}
-                    keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-                    renderItem={({ item }) => <AppointmentCard item={item} colors={colors} />}
+                    keyExtractor={(i) => i.id?.toString() || Math.random().toString()}
+                    renderItem={({ item, index }) => (
+                        <AppointmentCard
+                            item={item}
+                            index={index}
+                            colors={colors}
+                            anim={staggerAnims[Math.min(index, staggerAnims.length - 1)]}
+                            onPress={() => navigation.navigate('AppointmentDetail', { appointmentId: item.id, appointment: item })}
+                        />
+                    )}
                     contentContainerStyle={styles.list}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-                    }
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <Calendar size={52} color={colors.cardBorder} />
-                            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                                No appointments found
-                            </Text>
+                            <Calendar size={60} color={colors.mutedForeground} opacity={0.2} />
+                            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No appointments found</Text>
                         </View>
                     }
                 />
@@ -209,48 +224,36 @@ const AppointmentsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    searchBar: {
-        flexDirection: 'row', alignItems: 'center',
-        margin: 16, borderRadius: 12, borderWidth: 1,
-        paddingHorizontal: 14, height: 46,
+    screen: { flex: 1 },
+    bgGlow: { position: 'absolute', top: -100, right: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
+    bgGlowSecondary: { position: 'absolute', bottom: -150, left: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 18 },
+    title: { fontSize: 28, fontWeight: '900', letterSpacing: -0.8 },
+    subtitle: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: -1, opacity: 0.6 },
+    addBtn: {
+        width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
     },
-    searchInput: { flex: 1, fontSize: 15, marginLeft: 10 },
-    filterRow: { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
-    pill: {
-        paddingHorizontal: 14, paddingVertical: 6,
-        borderRadius: 20, borderWidth: 1,
-    },
-    pillText: { fontSize: 13, fontWeight: '500' },
-    list: { paddingHorizontal: 16, paddingBottom: 24 },
-    card: {
-        flexDirection: 'row', alignItems: 'center',
-        borderRadius: 14, borderWidth: 1,
-        padding: 14, marginBottom: 12,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
-    },
-    cardLeft: { marginRight: 14 },
-    avatarBox: {
-        width: 44, height: 44, borderRadius: 12,
-        justifyContent: 'center', alignItems: 'center',
-    },
-    cardBody: { flex: 1 },
-    patientName: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
-    row: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-    meta: { fontSize: 13 },
-    badge: {
-        flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-        borderWidth: 1, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3,
-        marginTop: 6, gap: 4,
-    },
-    badgeText: { fontSize: 11, fontWeight: '600' },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60, gap: 12 },
-    loadingText: { fontSize: 14, marginTop: 10 },
-    errorText: { fontSize: 15, textAlign: 'center', paddingHorizontal: 30, lineHeight: 22 },
-    retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
-    retryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-    emptyText: { fontSize: 16, marginTop: 10 },
+    filterBar: { paddingHorizontal: 20, gap: 8, height: 46, alignItems: 'center' },
+    pill: { overflow: 'hidden', borderWidth: 1 },
+    pillText: { fontSize: 13, letterSpacing: -0.2 },
+    list: { paddingHorizontal: 16, paddingBottom: layout.tabBarHeight + 30, gap: 10 },
+    iconBox: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+    initials: { fontSize: 16, fontWeight: '900' },
+    cardContent: { flex: 1, paddingRight: 4, gap: 2 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7 },
+    statusText: { fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+    patientName: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+    metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    metaText: { fontSize: 12, fontWeight: '700', opacity: 0.6 },
+    metaDot: { width: 3, height: 3, borderRadius: 1.5, opacity: 0.1 },
+    arrowBox: { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', opacity: 0.7 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 100, gap: 14 },
+    errorText: { fontSize: 15, fontWeight: '700', textAlign: 'center', opacity: 0.6 },
+    retryBtn: { marginTop: 12, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 },
+    retryText: { color: '#fff', fontWeight: '800' },
+    emptyText: { fontSize: 15, fontWeight: '800', textAlign: 'center', opacity: 0.4 },
 });
 
 export default AppointmentsScreen;

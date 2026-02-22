@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet, View, Text, FlatList, ActivityIndicator,
-    TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform,
+    TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { callApi } from '../api/calls';
 import { getName, getPhone, getConvId, getType, getStatus, getDuration, getFmtDate, normaliseList } from '../shared/callHelpers';
@@ -10,6 +11,9 @@ import {
     PhoneOutgoing, Clock, ChevronRight, AlertCircle,
     Phone, X, Send, Calendar, RotateCcw,
 } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
+import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim } from '../utils/animations';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -51,110 +55,147 @@ const TYPE_COLORS = {
 const RedialModal = ({ visible, initialPhone, onClose, colors }) => {
     const [phone, setPhone] = useState(initialPhone || '');
     const [loading, setLoading] = useState(false);
+    const g = colors.glass;
 
     useEffect(() => { if (visible) setPhone(initialPhone || ''); }, [visible, initialPhone]);
 
     const trigger = async () => {
         const clean = phone.replace(/\D/g, '');
-        if (clean.length < 10) { Alert.alert('Invalid', 'Please enter a valid 10-digit phone number.'); return; }
+        if (clean.length < 10) { Alert.alert('Invalid', 'Please enter 10 digits.'); return; }
         setLoading(true);
         try {
             await callApi.testFeedbackCall(clean);
-            Alert.alert('✓ Call Triggered', 'Feedback call initiated successfully.');
+            Alert.alert('✓ Success', 'Clinical follow-up triggered.');
             onClose();
         } catch (e) {
-            Alert.alert('Error', e?.response?.data?.message || 'Failed to trigger call.');
+            Alert.alert('Trigger Failed', e?.response?.data?.message || 'Check connection.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
-                <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+            <View style={styles.modalOverlay}>
+                <LiquidGlass
+                    intensity={g.blurStrong}
+                    tint={g.tint}
+                    padding={24}
+                    borderRadius={30}
+                    style={{ position: 'relative' }}
+                >
+                    <View style={styles.modalGlow} />
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalTitle, { color: colors.foreground }]}>Trigger Feedback Call</Text>
-                        <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <X size={22} color={colors.mutedForeground} />
+                        <View>
+                            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Trigger Follow-up</Text>
+                            <Text style={[styles.modalSub, { color: colors.primary }]}>OUTBOUND CLINIC CALL</Text>
+                        </View>
+                        <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.muted }]}>
+                            <X size={18} color={colors.foreground} strokeWidth={3} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>Phone number (10 digits)</Text>
-                    <View style={[styles.phoneInput, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
-                        <Phone size={16} color={colors.mutedForeground} />
+
+                    <LiquidGlass
+                        intensity={g.blur}
+                        tint={g.tint}
+                        padding={14}
+                        borderRadius={18}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                    >
+                        <View style={[styles.inputIcon, { backgroundColor: colors.primary + '10' }]}>
+                            <Phone size={14} color={colors.primary} strokeWidth={2.5} />
+                        </View>
                         <TextInput
                             style={[styles.phoneField, { color: colors.foreground }]}
                             value={phone}
                             onChangeText={setPhone}
                             keyboardType="phone-pad"
-                            placeholder="9XXXXXXXXX"
+                            placeholder="Patient Mobile..."
                             placeholderTextColor={colors.mutedForeground}
                             maxLength={12}
                         />
-                    </View>
+                    </LiquidGlass>
+
                     <TouchableOpacity
                         onPress={trigger}
                         disabled={loading}
-                        style={[styles.triggerBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+                        activeOpacity={0.8}
+                        style={[styles.triggerBtn, { backgroundColor: colors.foreground }]}
                     >
                         {loading
-                            ? <ActivityIndicator size="small" color="#fff" />
+                            ? <ActivityIndicator size="small" color={colors.background} />
                             : <>
-                                <Send size={16} color="#fff" />
-                                <Text style={styles.triggerTxt}>Trigger Call</Text>
+                                <Send size={16} color={colors.background} strokeWidth={2.5} />
+                                <Text style={[styles.triggerTxt, { color: colors.background }]}>START SESSION</Text>
                             </>
                         }
                     </TouchableOpacity>
-                </View>
-            </KeyboardAvoidingView>
+                </LiquidGlass>
+            </View>
         </Modal>
     );
 };
 
 // ─── Call row ─────────────────────────────────────────────────────────────────
-const CallRow = ({ item, colors, onPress, onRedial }) => {
+const CallRow = ({ item, colors, onPress, onRedial, anim }) => {
     const status = getStatus(item);
     const type = getType(item);
     const statusClr = STATUS_COLORS[status] || colors.mutedForeground;
     const typeClr = TYPE_COLORS[type] || colors.primary;
+    const g = colors.glass;
+    const { scale, pressIn, pressOut } = useScalePressAnim();
 
     return (
-        <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={onPress}
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-        >
-            <View style={[styles.iconBox, { backgroundColor: typeClr + '18' }]}>
-                <PhoneOutgoing size={18} color={typeClr} />
-            </View>
-            <View style={styles.cardBody}>
-                <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>
-                    {getName(item)}
-                </Text>
-                <Text style={[styles.phone, { color: colors.mutedForeground }]}>{getPhone(item) || '—'}</Text>
-                <View style={styles.row}>
-                    {!!type && (
-                        <View style={[styles.pill, { backgroundColor: typeClr + '18', borderColor: typeClr + '40' }]}>
-                            <Text style={[styles.pillTxt, { color: typeClr }]}>{type.replace('_', '-')}</Text>
-                        </View>
-                    )}
-                    <View style={[styles.pill, { backgroundColor: statusClr + '18', borderColor: statusClr + '40' }]}>
-                        <Text style={[styles.pillTxt, { color: statusClr }]}>{status}</Text>
+        <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }, { scale }] } : { transform: [{ scale }] }}>
+            <TouchableOpacity
+                activeOpacity={1}
+                onPress={onPress}
+                onPressIn={pressIn}
+                onPressOut={pressOut}
+            >
+                <LiquidGlass
+                    intensity={g.blur}
+                    tint={g.tint}
+                    padding={16}
+                    borderRadius={24}
+                    style={{ flexDirection: 'row', alignItems: 'center' }}
+                >
+                    <View style={[styles.iconBox, { backgroundColor: typeClr + '10' }]}>
+                        <PhoneOutgoing size={18} color={typeClr} strokeWidth={2.5} />
                     </View>
-                    {!!getDuration(item) && (
-                        <View style={styles.durationRow}>
-                            <Clock size={11} color={colors.mutedForeground} />
-                            <Text style={[styles.duration, { color: colors.mutedForeground }]}>{getDuration(item)}</Text>
+                    <View style={styles.cardBody}>
+                        <View style={styles.cardHeaderRow}>
+                            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>
+                                {getName(item)}
+                            </Text>
+                            {!!getDuration(item) && (
+                                <View style={[styles.durationRow, { backgroundColor: colors.success + '10' }]}>
+                                    <Clock size={10} color={colors.success} strokeWidth={3} />
+                                    <Text style={[styles.duration, { color: colors.success }]}>{getDuration(item)}</Text>
+                                </View>
+                            )}
                         </View>
-                    )}
-                </View>
-                <Text style={[styles.date, { color: colors.mutedForeground }]}>{getFmtDate(item)}</Text>
-            </View>
-            <TouchableOpacity onPress={onRedial} style={styles.redialBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <RotateCcw size={16} color={colors.primary} />
+                        <Text style={[styles.phone, { color: colors.mutedForeground }]}>{getPhone(item) || 'Unknown Identity'}</Text>
+                        <View style={styles.metaRow}>
+                            {!!type && (
+                                <View style={[styles.pill, { backgroundColor: typeClr + '08', borderColor: typeClr + '20' }]}>
+                                    <Text style={[styles.pillTxt, { color: typeClr }]}>{type.replace('_', ' ')}</Text>
+                                </View>
+                            )}
+                            <View style={[styles.pill, { backgroundColor: statusClr + '08', borderColor: statusClr + '20' }]}>
+                                <Text style={[styles.pillTxt, { color: statusClr }]}>{status}</Text>
+                            </View>
+                        </View>
+                    </View>
+                    <View style={styles.actionCol}>
+                        <TouchableOpacity onPress={onRedial} style={[styles.redialBtn, { backgroundColor: colors.primary + '10' }]} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                            <RotateCcw size={15} color={colors.primary} strokeWidth={3} />
+                        </TouchableOpacity>
+                        <ChevronRight size={14} color={colors.mutedForeground} strokeWidth={3} opacity={0.4} />
+                    </View>
+                </LiquidGlass>
             </TouchableOpacity>
-            <ChevronRight size={16} color={colors.mutedForeground} />
-        </TouchableOpacity>
+        </Animated.View>
     );
 };
 
@@ -188,16 +229,27 @@ const FollowUpScreen = ({ navigation }) => {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
+    const staggerAnims = useStagger(8, 80);
     const grouped = groupByDate(items);
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             {/* Trigger FAB */}
             <TouchableOpacity
                 onPress={() => setModal({ visible: true, phone: '' })}
-                style={[styles.fab, { backgroundColor: colors.primary }]}
+                activeOpacity={0.9}
+                style={styles.fabWrap}
             >
-                <Phone size={22} color="#fff" />
+                <LiquidGlass
+                    intensity={g.blurStrong}
+                    tint={g.tint}
+                    padding={0}
+                    containerStyle={styles.fabGl}
+                    style={{ backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }}
+                >
+                    <View style={styles.fabGlow} />
+                    <Phone size={26} color="#fff" strokeWidth={2.5} />
+                </LiquidGlass>
             </TouchableOpacity>
 
             {loading ? (
@@ -206,11 +258,11 @@ const FollowUpScreen = ({ navigation }) => {
                 </View>
             ) : error ? (
                 <View style={styles.center}>
-                    <AlertCircle size={48} color="#ef4444" />
-                    <Text style={[styles.errorTxt, { color: '#ef4444' }]}>{error}</Text>
+                    <AlertCircle size={48} color={colors.error} strokeWidth={1.5} />
+                    <Text style={[styles.errorTxt, { color: colors.error }]}>{error}</Text>
                     <TouchableOpacity onPress={() => { setLoading(true); fetchData(); }}
                         style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.retryTxt}>Retry</Text>
+                        <Text style={styles.retryTxt}>Retry Connection</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -219,12 +271,13 @@ const FollowUpScreen = ({ navigation }) => {
                     keyExtractor={(item, idx) => item.type === 'header' ? `h-${item.label}` : getConvId(item.item) || String(idx)}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.primary} />}
                     contentContainerStyle={styles.list}
-                    renderItem={({ item: row }) => {
+                    renderItem={({ item: row, index }) => {
                         if (row.type === 'header') {
                             return (
                                 <View style={styles.sectionHeader}>
-                                    <Calendar size={13} color={colors.primary} />
-                                    <Text style={[styles.sectionTxt, { color: colors.primary }]}>{row.label}</Text>
+                                    <View style={[styles.sectionLine, { backgroundColor: g.borderSubtle }]} />
+                                    <Text style={[styles.sectionTxt, { color: colors.mutedForeground }]}>{row.label}</Text>
+                                    <View style={[styles.sectionLine, { backgroundColor: g.borderSubtle }]} />
                                 </View>
                             );
                         }
@@ -233,22 +286,28 @@ const FollowUpScreen = ({ navigation }) => {
                             <CallRow
                                 item={c}
                                 colors={colors}
-                                onPress={() => navigation.navigate('ConversationDetail', {
-                                    conversation: c,
-                                    conversationId: getConvId(c),
+                                anim={staggerAnims[Math.min(index, staggerAnims.length - 1)]}
+                                onPress={() => navigation.navigate('Conversations', {
+                                    screen: 'ConversationDetail',
+                                    params: {
+                                        conversation: c,
+                                        conversationId: getConvId(c),
+                                    }
                                 })}
                                 onRedial={() => setModal({ visible: true, phone: getPhone(c) })}
                             />
                         );
                     }}
                     ListEmptyComponent={
-                        <View style={styles.center}>
-                            <PhoneOutgoing size={64} color={colors.cardBorder} />
-                            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No Follow-up Calls</Text>
+                        <Animated.View style={staggerAnims[1] ? [styles.center, { opacity: staggerAnims[1].opacity, transform: [{ translateY: staggerAnims[1].translateY }] }] : styles.center}>
+                            <BlurView intensity={20} tint={g.tint} style={styles.emptyIconWrap}>
+                                <PhoneOutgoing size={48} color={colors.primary} strokeWidth={1.5} />
+                            </BlurView>
+                            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No Sessions Yet</Text>
                             <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-                                Outbound call history will appear here.
+                                All outbound clinic communication logs will appear here.
                             </Text>
-                        </View>
+                        </Animated.View>
                     }
                 />
             )}
@@ -265,58 +324,51 @@ const FollowUpScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    list: { padding: 16, paddingBottom: 80 },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, marginTop: 16 },
-    sectionTxt: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-    card: {
-        flexDirection: 'row', alignItems: 'center',
-        borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 10,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04, shadowRadius: 3, elevation: 2,
-    },
-    iconBox: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    list: { padding: 16, paddingBottom: layout.tabBarHeight + 100, paddingTop: layout.statusBarHeight + 10 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 20, paddingHorizontal: 4 },
+    sectionLine: { flex: 1, height: 1, opacity: 0.5 },
+    sectionTxt: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.5 },
+    iconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
     cardBody: { flex: 1 },
-    name: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
-    phone: { fontSize: 13, marginBottom: 6 },
-    row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginBottom: 4 },
-    pill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, borderWidth: 1 },
-    pillTxt: { fontSize: 11, fontWeight: '600' },
-    durationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-    duration: { fontSize: 11 },
-    date: { fontSize: 12 },
-    redialBtn: { padding: 8, marginRight: 4 },
+    cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
+    name: { fontSize: 16, fontWeight: '900', letterSpacing: -0.3, maxWidth: '70%' },
+    phone: { fontSize: 12, fontWeight: '700', opacity: 0.6, marginBottom: 6 },
+    metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+    pill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
+    pillTxt: { fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+    durationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7 },
+    duration: { fontSize: 11, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    actionCol: { alignItems: 'center', gap: 8, marginLeft: 10 },
+    redialBtn: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
 
-    fab: {
-        position: 'absolute', bottom: 24, right: 24, zIndex: 99,
-        width: 56, height: 56, borderRadius: 28,
-        justifyContent: 'center', alignItems: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25, shadowRadius: 8, elevation: 10,
+    fabWrap: { position: 'absolute', bottom: layout.tabBarHeight + 20, right: 20, zIndex: 100 },
+    fabGl: {
+        width: 58, height: 58, borderRadius: 22, borderWidth: 1,
     },
+    fabGlow: { position: 'absolute', top: -30, left: -30, width: 60, height: 60, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 30 },
 
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 12 },
-    errorTxt: { fontSize: 15, textAlign: 'center' },
-    retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
-    retryTxt: { color: '#fff', fontWeight: '600' },
-    emptyTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
-    emptySubtitle: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 16 },
+    emptyIconWrap: { width: 90, height: 90, borderRadius: 35, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)' },
+    emptyTitle: { fontSize: 22, fontWeight: '900', textAlign: 'center', letterSpacing: -0.6 },
+    emptySubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20, fontWeight: '600', opacity: 0.6 },
+    errorTxt: { fontSize: 14, textAlign: 'center', fontWeight: '800' },
+    retryBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14, marginTop: 8 },
+    retryTxt: { color: '#fff', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
 
     // Modal
-    modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-    modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
-    modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-    modalTitle: { fontSize: 18, fontWeight: '700' },
-    modalLabel: { fontSize: 13, marginBottom: 8 },
-    phoneInput: {
-        flexDirection: 'row', alignItems: 'center', gap: 10,
-        borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 16,
-    },
-    phoneField: { flex: 1, fontSize: 16 },
+    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', padding: 24 },
+    modalGlow: { position: 'absolute', top: -100, left: -100, width: 250, height: 250, backgroundColor: 'rgba(255,100,255,0.05)', borderRadius: 125 },
+    modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+    closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    modalTitle: { fontSize: 20, fontWeight: '900', letterSpacing: -0.6 },
+    modalSub: { fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+    inputIcon: { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+    phoneField: { flex: 1, fontSize: 16, fontWeight: '700' },
     triggerBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 8, paddingVertical: 14, borderRadius: 14,
+        gap: 10, paddingVertical: 16, borderRadius: 18,
     },
-    triggerTxt: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    triggerTxt: { fontWeight: '900', fontSize: 14, letterSpacing: 1 },
 });
 
 export default FollowUpScreen;

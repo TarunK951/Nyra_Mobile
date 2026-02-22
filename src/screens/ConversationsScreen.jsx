@@ -1,263 +1,232 @@
+// ─── iOS 26 Liquid Glass — Conversations / Calls Screen ──────────
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     StyleSheet, View, Text, FlatList, ActivityIndicator,
-    TouchableOpacity, RefreshControl, TextInput, Animated,
+    TouchableOpacity, RefreshControl, TextInput, Platform, Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { callApi } from '../api/calls';
-import { getName, getPhone, getConvId, getStatus, getDirection, getType, getDuration, getFmtDate, normaliseList } from '../shared/callHelpers';
-import {
-    MessageSquare, PhoneCall, PhoneIncoming, PhoneOutgoing,
-    Search, Clock, ChevronRight, AlertCircle, Wifi,
-} from 'lucide-react-native';
+import { MessageSquare, PhoneIncoming, PhoneOutgoing, Search, ChevronRight, AlertCircle, Wifi } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
+import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim, usePulse, SPRING } from '../utils/animations';
 
-// ─── Type config ─────────────────────────────────────────────────────────────
-const TYPE_CFG = {
-    reminder: { label: 'Reminder', color: '#6366f1' },
-    booking: { label: 'Booking', color: '#3b82f6' },
-    feedback: { label: 'Feedback', color: '#f59e0b' },
-    follow_up: { label: 'Follow-up', color: '#10b981' },
-    live: { label: 'Live', color: '#ef4444' },
-};
-const STATUS_COLORS = {
-    LIVE: '#10b981', ENDED: '#6b7280', FAILED: '#ef4444', CANCELLED: '#f59e0b',
-    ACTIVE: '#10b981', COMPLETED: '#3b82f6',
+const LIVE_COLOR = '#10b981';
+const ENDED_COLOR = '#6b7280';
+const FAIL_COLOR = '#ef4444';
+
+const getStatusColor = (s) => {
+    s = s?.toUpperCase();
+    if (s === 'LIVE' || s === 'ACTIVE') return LIVE_COLOR;
+    if (s === 'FAILED') return FAIL_COLOR;
+    return ENDED_COLOR;
 };
 
-// ─── Pulsing Live dot ────────────────────────────────────────────────────────
-const PulsingDot = ({ color }) => {
-    const anim = useRef(new Animated.Value(1)).current;
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(anim, { toValue: 0.3, duration: 700, useNativeDriver: true }),
-                Animated.timing(anim, { toValue: 1, duration: 700, useNativeDriver: true }),
-            ])
-        ).start();
-    }, []);
-    return <Animated.View style={[styles.liveDot, { backgroundColor: color, opacity: anim }]} />;
+const normalise = (d) => {
+    if (!d) return [];
+    const raw = d?.calls || d?.conversations || d?.data || (Array.isArray(d) ? d : []);
+    return Array.isArray(raw) ? raw : [];
 };
 
-// ─── Conversation row card ────────────────────────────────────────────────────
-const ConvCard = ({ item, colors, onPress }) => {
-    const status = getStatus(item);
-    const direction = getDirection(item);
-    const type = getType(item);
-    const isLive = status === 'LIVE' || status === 'ACTIVE';
-    const statusColor = STATUS_COLORS[status] || colors.mutedForeground;
-    const typeCfg = TYPE_CFG[type];
+const getName = (c) => c?.patient?.name || c?.callee?.name || c?.callerName || 'Unknown Patient';
+const getPhone = (c) => c?.patient?.phone || c?.phone || '—';
+const getId = (c) => c?.id || c?.conversationId || c?._id;
+const getDirn = (c) => c?.direction?.toUpperCase() || 'OUTBOUND';
 
-    const DirectionIcon = direction === 'OUTBOUND' ? PhoneOutgoing : direction === 'INBOUND' ? PhoneIncoming : PhoneCall;
+// ── Live pulsing dot ─────────────────────────────────────────────
+const LiveDot = ({ color }) => {
+    const scale = usePulse(0.6, 1);
+    return <Animated.View style={[styles.liveDot, { backgroundColor: color, transform: [{ scale }] }]} />;
+};
 
+// ── Glass Tab Toggle ──────────────────────────────────────────────
+const SegmentTab = ({ tabs, active, onChange, colors }) => {
+    const g = colors.glass;
     return (
-        <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={onPress}
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+        <LiquidGlass
+            intensity={g.blur}
+            tint={g.tint}
+            containerStyle={styles.segmentWrap}
+            padding={4}
+            style={{ flexDirection: 'row' }}
         >
-            {/* Icon */}
-            <View style={[styles.iconBox, { backgroundColor: (typeCfg?.color || colors.primary) + '18' }]}>
-                <DirectionIcon size={20} color={typeCfg?.color || colors.primary} />
-            </View>
-
-            {/* Content */}
-            <View style={styles.cardBody}>
-                <View style={styles.cardRow}>
-                    <Text style={[styles.patientName, { color: colors.foreground }]} numberOfLines={1}>
-                        {getName(item)}
-                    </Text>
-                    {isLive && <PulsingDot color="#ef4444" />}
-                </View>
-                <Text style={[styles.phone, { color: colors.mutedForeground }]}>{getPhone(item)}</Text>
-                <View style={styles.cardRow2}>
-                    {!!typeCfg && (
-                        <View style={[styles.pill, { backgroundColor: typeCfg.color + '18', borderColor: typeCfg.color + '40' }]}>
-                            <Text style={[styles.pillTxt, { color: typeCfg.color }]}>{typeCfg.label}</Text>
-                        </View>
-                    )}
-                    <View style={[styles.pill, { backgroundColor: statusColor + '18', borderColor: statusColor + '40' }]}>
-                        <Text style={[styles.pillTxt, { color: statusColor }]}>{status}</Text>
-                    </View>
-                </View>
-                <View style={styles.cardFooter}>
-                    {!!getDuration(item) && (
-                        <View style={styles.footerItem}>
-                            <Clock size={12} color={colors.mutedForeground} />
-                            <Text style={[styles.footerTxt, { color: colors.mutedForeground }]}>{getDuration(item)}</Text>
-                        </View>
-                    )}
-                    <Text style={[styles.footerDate, { color: colors.mutedForeground }]}>{getFmtDate(item)}</Text>
-                </View>
-            </View>
-            <ChevronRight size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
+            {tabs.map(t => {
+                const on = active === t;
+                return (
+                    <TouchableOpacity
+                        key={t}
+                        onPress={() => onChange(t)}
+                        style={[styles.segmentTab, on && { backgroundColor: colors.foreground }]}
+                    >
+                        <Text style={[styles.segmentText, { color: on ? colors.background : colors.mutedForeground }]}>
+                            {t}
+                        </Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </LiquidGlass>
     );
 };
 
-// ─── Tab buttons ───────────────────────────────────────────────────────────────
-const TABS = [
-    { key: 'live', label: 'Live', params: { status: 'live' } },
-    { key: 'history', label: 'History', params: { status: 'history' } },
-    { key: 'outbound', label: 'Follow-up', params: { status: 'history', direction: 'OUTBOUND' } },
-];
+// ── Call card ───────────────────────────────────────────────────
+const CallCard = ({ item, index, colors, onPress, anim }) => {
+    const g = colors.glass;
+    const { scale, pressIn, pressOut } = useScalePressAnim();
 
-const HISTORY_TYPES = [
-    { key: '', label: 'All' },
-    { key: 'reminder', label: 'Reminder' },
-    { key: 'booking', label: 'Booking' },
-    { key: 'feedback', label: 'Feedback' },
-    { key: 'follow_up', label: 'Follow-up' },
-];
+    const status = item.status?.toUpperCase() || 'ENDED';
+    const isLive = status === 'LIVE' || status === 'ACTIVE';
+    const sColor = getStatusColor(status);
+    const DirIcon = getDirn(item) === 'INBOUND' ? PhoneIncoming : PhoneOutgoing;
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+    return (
+        <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }, { scale }] } : { transform: [{ scale }] }}>
+            <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1}>
+                <LiquidGlass
+                    intensity={g.blur}
+                    tint={g.tint}
+                    containerStyle={styles.card}
+                    padding={0}
+                    style={{ flexDirection: 'row', alignItems: 'center' }}
+                >
+                    <View style={[styles.iconBox, { backgroundColor: sColor + '10' }]}>
+                        <DirIcon size={20} color={sColor} strokeWidth={2.5} />
+                    </View>
+                    <View style={styles.cardBody}>
+                        <View style={styles.cardHeader}>
+                            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{getName(item)}</Text>
+                            {isLive && <LiveDot color={sColor} />}
+                        </View>
+                        <Text style={[styles.phone, { color: colors.mutedForeground }]}>{getPhone(item)}</Text>
+                        <View style={styles.footerRow}>
+                            <View style={[styles.statusBadge, { backgroundColor: sColor + '12' }]}>
+                                <Text style={[styles.statusText, { color: sColor }]}>{status}</Text>
+                            </View>
+                            <Text style={[styles.timeText, { color: colors.mutedForeground }]}>
+                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={[styles.arrowBox, { backgroundColor: colors.muted }]}>
+                        <ChevronRight size={14} color={colors.foreground} strokeWidth={3} />
+                    </View>
+                </LiquidGlass>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
+
 const ConversationsScreen = ({ navigation }) => {
     const { colors } = useTheme();
-    const [tab, setTab] = useState('live');
-    const [typeFilter, setTypeFilter] = useState('');
-    const [search, setSearch] = useState('');
-    const [items, setItems] = useState([]);
+    const g = colors.glass;
+
+    const [tab, setTab] = useState('Live');
+    const [calls, setCalls] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+    const [refresh, setRefresh] = useState(false);
+    const [search, setSearch] = useState('');
     const [error, setError] = useState(null);
-    const liveInterval = useRef(null);
+    const intervalRef = useRef(null);
+    const staggerAnims = useStagger(8, 60);
 
-    const fetchData = useCallback(async () => {
-        setError(null);
+    const fetchCalls = useCallback(async () => {
         try {
-            const tabCfg = TABS.find(t => t.key === tab);
-            const params = { ...tabCfg.params };
-            if (tab === 'history' && typeFilter) params.type = typeFilter;
-
+            setError(null);
+            const params = tab === 'Live' ? { status: 'live' } : { status: 'history' };
             const res = await callApi.getConversations(params);
-            setItems(normaliseList(res.data));
+            setCalls(normalise(res?.data));
         } catch (e) {
-            console.error('[Conversations]', e?.response?.data || e.message);
-            setError(e?.response?.data?.message || 'Failed to load conversations.');
+            setError('Failed to load calls.');
         } finally {
             setLoading(false);
-            setRefreshing(false);
+            setRefresh(false);
         }
-    }, [tab, typeFilter]);
+    }, [tab]);
 
     useEffect(() => {
         setLoading(true);
-        setItems([]);
-        fetchData();
-
-        // Auto-refresh live tab every 15s
-        if (tab === 'live') {
-            liveInterval.current = setInterval(fetchData, 15000);
+        fetchCalls();
+        if (tab === 'Live') {
+            intervalRef.current = setInterval(fetchCalls, 12000);
         }
-        return () => clearInterval(liveInterval.current);
-    }, [fetchData]);
+        return () => clearInterval(intervalRef.current);
+    }, [fetchCalls, tab]);
 
-    const displayed = search.trim()
-        ? items.filter(c => {
-            const q = search.toLowerCase();
-            return getName(c).toLowerCase().includes(q)
-                || getPhone(c).includes(q);
-        })
-        : items;
-
-    const onPressItem = (item) => {
-        navigation.navigate('ConversationDetail', {
-            conversation: item,
-            conversationId: getConvId(item),
-        });
-    };
+    const displayed = calls.filter(c => {
+        const q = search.toLowerCase();
+        return getName(c).toLowerCase().includes(q) || getPhone(c).includes(q);
+    });
 
     return (
-        <View style={[styles.screen, { backgroundColor: colors.background }]}>
-            {/* Tabs */}
-            <View style={[styles.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.cardBorder }]}>
-                {TABS.map(t => {
-                    const active = tab === t.key;
-                    return (
-                        <TouchableOpacity
-                            key={t.key}
-                            onPress={() => { setTab(t.key); setTypeFilter(''); }}
-                            style={[styles.tabBtn, active && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
-                        >
-                            {t.key === 'live' && <Wifi size={13} color={active ? colors.primary : colors.mutedForeground} />}
-                            <Text style={[styles.tabTxt, { color: active ? colors.primary : colors.mutedForeground }]}>
-                                {t.label}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
+        <View style={styles.screen}>
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: layout.statusBarHeight + 10 }]}>
+                <View>
+                    <Text style={[styles.title, { color: colors.foreground }]}>Calls</Text>
+                    <Text style={[styles.subtitle, { color: colors.primary }]}>Conversation History</Text>
+                </View>
+                <SegmentTab
+                    tabs={['Live', 'History']}
+                    active={tab}
+                    onChange={(t) => { setLoading(true); setTab(t); }}
+                    colors={colors}
+                />
             </View>
 
             {/* Search */}
-            <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                <Search size={16} color={colors.mutedForeground} />
-                <TextInput
-                    style={[styles.searchInput, { color: colors.foreground }]}
-                    placeholder="Search patient or phone…"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={search}
-                    onChangeText={setSearch}
-                />
+            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+                <LiquidGlass
+                    intensity={g.blur}
+                    tint={g.tint}
+                    padding={0}
+                    style={styles.searchBlur}
+                >
+                    <View style={styles.searchIcon}>
+                        <Search size={18} color={colors.primary} strokeWidth={2.5} />
+                    </View>
+                    <TextInput
+                        style={[styles.searchInput, { color: colors.foreground }]}
+                        placeholder="Search patient or phone…"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={search}
+                        onChangeText={setSearch}
+                    />
+                </LiquidGlass>
             </View>
 
-            {/* Type filter pills (History tab only) */}
-            {tab === 'history' && (
-                <FlatList
-                    data={HISTORY_TYPES}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyExtractor={i => i.key}
-                    contentContainerStyle={styles.filterRow}
-                    renderItem={({ item }) => {
-                        const active = typeFilter === item.key;
-                        return (
-                            <TouchableOpacity
-                                onPress={() => setTypeFilter(item.key)}
-                                style={[styles.filterPill,
-                                { borderColor: active ? colors.primary : colors.cardBorder },
-                                active && { backgroundColor: colors.primary }
-                                ]}
-                            >
-                                <Text style={[styles.filterTxt, { color: active ? '#fff' : colors.mutedForeground }]}>
-                                    {item.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    }}
-                />
-            )}
-
-            {/* Content */}
-            {loading ? (
-                <View style={styles.center}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={[styles.loadingTxt, { color: colors.mutedForeground }]}>Loading conversations…</Text>
-                </View>
+            {loading && !refresh ? (
+                <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
             ) : error ? (
                 <View style={styles.center}>
-                    <AlertCircle size={48} color="#ef4444" />
-                    <Text style={[styles.errorTxt, { color: '#ef4444' }]}>{error}</Text>
-                    <TouchableOpacity onPress={() => { setLoading(true); fetchData(); }}
-                        style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.retryTxt}>Retry</Text>
+                    <AlertCircle size={44} color={colors.error} opacity={0.5} />
+                    <Text style={[styles.errorText, { color: colors.mutedForeground }]}>{error}</Text>
+                    <TouchableOpacity onPress={() => { setRefresh(true); fetchCalls(); }} style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
                     data={displayed}
-                    keyExtractor={(item) => getConvId(item) || Math.random().toString()}
-                    renderItem={({ item }) => <ConvCard item={item} colors={colors} onPress={() => onPressItem(item)} />}
+                    keyExtractor={(i) => getId(i)?.toString() || Math.random().toString()}
+                    renderItem={({ item, index }) => (
+                        <CallCard
+                            item={item} index={index} colors={colors}
+                            anim={staggerAnims[Math.min(index, staggerAnims.length - 1)]}
+                            onPress={() => navigation.navigate('ConversationDetail', {
+                                conversationId: getId(item), conversation: item,
+                            })}
+                        />
+                    )}
                     contentContainerStyle={styles.list}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.primary} />}
-                    ListHeaderComponent={
-                        displayed.length > 0
-                            ? <Text style={[styles.countLabel, { color: colors.mutedForeground }]}>{displayed.length} conversation{displayed.length !== 1 ? 's' : ''}</Text>
-                            : null
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refresh} onRefresh={() => { setRefresh(true); fetchCalls(); }} tintColor={colors.primary} />
                     }
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <MessageSquare size={52} color={colors.cardBorder} />
-                            <Text style={[styles.emptyTxt, { color: colors.mutedForeground }]}>
-                                {tab === 'live' ? 'No active calls right now' : 'No conversations found'}
+                            <MessageSquare size={60} color={colors.mutedForeground} opacity={0.2} />
+                            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                                {tab === 'Live' ? 'No active calls right now' : 'No call history'}
                             </Text>
                         </View>
                     }
@@ -269,53 +238,37 @@ const ConversationsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     screen: { flex: 1 },
-    tabBar: {
-        flexDirection: 'row', borderBottomWidth: 1,
-    },
-    tabBtn: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 14, gap: 6,
-    },
-    tabTxt: { fontSize: 14, fontWeight: '600' },
-    searchBar: {
-        flexDirection: 'row', alignItems: 'center',
-        mx: 16, margin: 12, marginBottom: 4, borderRadius: 12, borderWidth: 1,
-        paddingHorizontal: 12, height: 44,
-    },
-    searchInput: { flex: 1, fontSize: 14, marginLeft: 8 },
-    filterRow: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
-    filterPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-    filterTxt: { fontSize: 13, fontWeight: '500' },
-    list: { paddingHorizontal: 12, paddingBottom: 24 },
-    countLabel: { fontSize: 13, marginBottom: 8, marginTop: 4 },
-
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
+    title: { fontSize: 34, fontWeight: '900', letterSpacing: -1.5 },
+    subtitle: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: -2 },
+    segmentWrap: { flexDirection: 'row', borderRadius: 16, borderWidth: 1, overflow: 'hidden', padding: 4 },
+    segmentTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+    segmentText: { fontSize: 13, fontWeight: '800' },
+    searchBlur: { flexDirection: 'row', alignItems: 'center', height: 54, paddingHorizontal: 16, gap: 12, borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+    searchIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
+    searchInput: { flex: 1, fontSize: 16, fontWeight: '600' },
+    list: { paddingHorizontal: 20, paddingBottom: layout.tabBarHeight + 30, gap: 12 },
     card: {
-        flexDirection: 'row', alignItems: 'center',
-        borderRadius: 14, borderWidth: 1,
-        padding: 14, marginBottom: 10,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05, shadowRadius: 3, elevation: 2,
+        flexDirection: 'row', alignItems: 'center', borderRadius: 28, borderWidth: 1, overflow: 'hidden',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 16 }, android: { elevation: 4 } }),
     },
-    iconBox: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-    cardBody: { flex: 1 },
-    cardRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
-    cardRow2: { flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' },
-    cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-    patientName: { fontSize: 15, fontWeight: '600', flex: 1 },
-    phone: { fontSize: 13 },
-    pill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, borderWidth: 1 },
-    pillTxt: { fontSize: 11, fontWeight: '600' },
-    footerItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    footerTxt: { fontSize: 12 },
-    footerDate: { fontSize: 12 },
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
+    iconBox: { width: 56, height: 56, margin: 14, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+    cardBody: { flex: 1, paddingVertical: 16, paddingRight: 8, gap: 2 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    name: { flex: 1, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+    phone: { fontSize: 13, fontWeight: '600', opacity: 0.6 },
+    footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
+    statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+    timeText: { fontSize: 12, fontWeight: '700', opacity: 0.6 },
+    arrowBox: { width: 28, height: 28, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 14, opacity: 0.7 },
     liveDot: { width: 8, height: 8, borderRadius: 4 },
-
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 12 },
-    loadingTxt: { fontSize: 14 },
-    errorTxt: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
-    retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
-    retryTxt: { color: '#fff', fontWeight: '600' },
-    emptyTxt: { fontSize: 16, marginTop: 8, textAlign: 'center' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 100, gap: 14 },
+    errorText: { fontSize: 16, fontWeight: '700', textAlign: 'center', opacity: 0.6 },
+    retryBtn: { marginTop: 12, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 16 },
+    retryText: { color: '#fff', fontWeight: '800' },
+    emptyText: { fontSize: 16, fontWeight: '800', textAlign: 'center', opacity: 0.4 },
 });
 
 export default ConversationsScreen;
