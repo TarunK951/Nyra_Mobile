@@ -94,6 +94,7 @@ const DrawerNavigator = () => {
                 component={TabNavigator}
                 options={{
                     title: 'Dashboard',
+                    headerShown: false,
                     drawerIcon: ({ color, size }) => <LayoutDashboard size={size} color={color} />
                 }}
             />

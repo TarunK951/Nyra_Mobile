@@ -10,6 +10,7 @@ import {
     CheckCircle, XCircle, AlertCircle, Circle, Edit2,
     Phone, MessageSquare, ChevronRight,
 } from 'lucide-react-native';
+import { layout } from '../utils/layout';
 
 const STATUS_CONFIG = {
     CONFIRMED: { label: 'Confirmed', color: '#10b981', icon: CheckCircle },
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: {
         flexDirection: 'row', alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 54 : 16,
+        paddingTop: layout.statusBarHeight,
         paddingBottom: 14, paddingHorizontal: 16,
         borderBottomWidth: 1, gap: 10,
     },

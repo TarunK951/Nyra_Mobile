@@ -1,20 +1,14 @@
 import React, { useState } from 'react';
 import {
-    StyleSheet,
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Image,
-    SafeAreaView,
-    StatusBar
+    StyleSheet, View, Text, TextInput, TouchableOpacity,
+    ActivityIndicator, KeyboardAvoidingView, Platform,
+    Image, StatusBar, Dimensions
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
-import { Mail, Lock, Phone, ChevronRight } from 'lucide-react-native';
+import { Mail, Lock, ChevronRight, Sparkles, ArrowRight } from 'lucide-react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -26,7 +20,7 @@ const LoginScreen = () => {
 
     const handleLogin = async () => {
         if (!email || !password) {
-            setError('Please fill in all fields');
+            setError('Please enter your credentials');
             return;
         }
 
@@ -48,48 +42,47 @@ const LoginScreen = () => {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.inner}
             >
-                <View style={styles.logoContainer}>
-                    <View style={[styles.logoWrapper, { backgroundColor: colors.accentSoft }]}>
-                        <Image
-                            source={{ uri: 'https://nyraai-main-website.vercel.app/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo.c1949d52.png&w=64&q=75' }}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
+                {/* Branding Section */}
+                <View style={styles.header}>
+                    <View style={[styles.logoBox, { backgroundColor: colors.primary }]}>
+                        <Sparkles size={32} color="#fff" strokeWidth={2.5} />
                     </View>
-                    <Text style={[styles.title, { color: colors.foreground }]}>NYRAAI</Text>
-                    <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Clinic Management System</Text>
+                    <Text style={[styles.title, { color: colors.foreground }]}>NyraAI</Text>
+                    <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                        Smart Clinic Management
+                    </Text>
                 </View>
 
+                {/* Form Section */}
                 <View style={styles.form}>
                     {error ? (
-                        <View style={[styles.errorBox, { backgroundColor: colors.destructive + '15' }]}>
-                            <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+                        <View style={[styles.errorBox, { backgroundColor: '#fee2e2' }]}>
+                            <Text style={styles.errorText}>{error}</Text>
                         </View>
                     ) : null}
 
                     <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.foreground }]}>Email or Phone</Text>
-                        <View style={[styles.inputWrapper, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                            <Mail size={18} color={colors.mutedForeground} style={styles.inputIcon} />
+                        <Text style={[styles.label, { color: colors.mutedForeground }]}>Email or Phone</Text>
+                        <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                            <Mail size={18} color={colors.primary} style={styles.inputIcon} />
                             <TextInput
                                 style={[styles.input, { color: colors.foreground }]}
-                                placeholder="Enter your email"
+                                placeholder="name@clinic.com"
                                 placeholderTextColor={colors.mutedForeground}
                                 value={email}
                                 onChangeText={(val) => { setEmail(val); setError(''); }}
                                 autoCapitalize="none"
-                                keyboardType="email-address"
                             />
                         </View>
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
-                        <View style={[styles.inputWrapper, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                            <Lock size={18} color={colors.mutedForeground} style={styles.inputIcon} />
+                        <Text style={[styles.label, { color: colors.mutedForeground }]}>Password</Text>
+                        <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                            <Lock size={18} color={colors.primary} style={styles.inputIcon} />
                             <TextInput
                                 style={[styles.input, { color: colors.foreground }]}
-                                placeholder="Enter your password"
+                                placeholder="••••••••"
                                 placeholderTextColor={colors.mutedForeground}
                                 value={password}
                                 onChangeText={(val) => { setPassword(val); setError(''); }}
@@ -99,28 +92,29 @@ const LoginScreen = () => {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.loginButton, { backgroundColor: colors.primary }]}
+                        style={[styles.loginBtn, { backgroundColor: colors.primary }]}
                         onPress={handleLogin}
                         disabled={loading}
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <View style={styles.buttonContent}>
-                                <Text style={styles.loginButtonText}>Login to Dashboard</Text>
-                                <ChevronRight size={18} color="#fff" />
+                            <View style={styles.btnContent}>
+                                <Text style={styles.loginBtnText}>Sign In to Dashboard</Text>
+                                <ArrowRight size={20} color="#fff" />
                             </View>
                         )}
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.forgotPassword}>
-                        <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
+                    <TouchableOpacity style={styles.forgotBtn}>
+                        <Text style={[styles.forgotText, { color: colors.primary }]}>Difficulty signing in? Contact Admin</Text>
                     </TouchableOpacity>
                 </View>
 
+                {/* Footer */}
                 <View style={styles.footer}>
                     <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
-                        By logging in, you agree to our Terms and Privacy Policy.
+                        Protecting your healthcare data with enterprise grade security.
                     </Text>
                 </View>
             </KeyboardAvoidingView>
@@ -129,140 +123,27 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    inner: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: 30,
-    },
-    logoContainer: {
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    logoWrapper: {
-        width: 64,
-        height: 64,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-            },
-            android: {
-                elevation: 4,
-            },
-            web: {
-                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-            }
-        }),
-    },
-    logo: {
-        width: 40,
-        height: 40,
-    },
-    title: {
-        fontSize: 26,
-        fontWeight: '800',
-        letterSpacing: 1,
-    },
-    subtitle: {
-        fontSize: 14,
-        marginTop: 6,
-    },
-    form: {
-        width: '100%',
-    },
-    errorBox: {
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 20,
-        alignItems: 'center',
-    },
-    errorText: {
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        height: 52,
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-    },
-    loginButton: {
-        borderRadius: 12,
-        height: 52,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 10,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 5,
-            },
-            web: {
-                boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-            }
-        }),
-    },
-    buttonContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    loginButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '700',
-        marginRight: 8,
-    },
-    forgotPassword: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    forgotPasswordText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 40,
-        left: 30,
-        right: 30,
-        alignItems: 'center',
-    },
-    footerText: {
-        fontSize: 12,
-        textAlign: 'center',
-    },
+    container: { flex: 1 },
+    inner: { flex: 1, paddingHorizontal: 32, justifyContent: 'center' },
+    header: { alignItems: 'center', marginBottom: 48 },
+    logoBox: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 16, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+    title: { fontSize: 32, fontWeight: '900', letterSpacing: -1 },
+    subtitle: { fontSize: 15, fontWeight: '500', marginTop: 4 },
+    form: { width: '100%' },
+    errorBox: { padding: 12, borderRadius: 12, marginBottom: 20, alignItems: 'center' },
+    errorText: { color: '#b91c1c', fontSize: 13, fontWeight: '600' },
+    inputGroup: { marginBottom: 20 },
+    label: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginLeft: 4 },
+    inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, height: 56 },
+    inputIcon: { marginRight: 12, opacity: 0.8 },
+    input: { flex: 1, fontSize: 16, fontWeight: '500' },
+    loginBtn: { borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center', marginTop: 12, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+    btnContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    loginBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+    forgotBtn: { marginTop: 24, alignItems: 'center' },
+    forgotText: { fontSize: 14, fontWeight: '600' },
+    footer: { position: 'absolute', bottom: 40, left: 32, right: 32, alignItems: 'center' },
+    footerText: { fontSize: 12, textAlign: 'center', opacity: 0.7, lineHeight: 18 },
 });
 
 export default LoginScreen;

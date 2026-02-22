@@ -45,11 +45,13 @@ export const AuthProvider = ({ children }) => {
     const login = async (credentials) => {
         try {
             const response = await authApi.login(credentials);
-            const { accessToken, refreshToken, user: userData } = response.data;
+            const { accessToken, token, refreshToken, refresh_token, user: userData } = response.data;
+            const finalToken = accessToken || token;
+            const finalRefresh = refreshToken || refresh_token;
 
-            await storage.setItem('accessToken', accessToken);
-            await storage.setItem('refreshToken', refreshToken);
-            await storage.setItem('user', JSON.stringify(userData));
+            if (finalToken) await storage.setItem('accessToken', finalToken);
+            if (finalRefresh) await storage.setItem('refreshToken', finalRefresh);
+            if (userData) await storage.setItem('user', JSON.stringify(userData));
 
             setUser(userData);
             setIsAuthenticated(true);

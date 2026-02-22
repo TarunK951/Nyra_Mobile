@@ -12,6 +12,7 @@ import {
     FileText, Clock, AlertCircle, PhoneCall, MessageSquare,
     Activity, ChevronRight, Heart,
 } from 'lucide-react-native';
+import { layout } from '../utils/layout';
 
 const InfoRow = ({ icon: Icon, label, value, colors }) => (
     value ? (
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
 
     header: {
         flexDirection: 'row', alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 54 : 16,
+        paddingTop: layout.statusBarHeight,
         paddingBottom: 14, paddingHorizontal: 16,
         borderBottomWidth: 1, gap: 10,
     },

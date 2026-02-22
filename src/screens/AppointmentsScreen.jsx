@@ -1,112 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet, View, Text, FlatList, ActivityIndicator,
-    TouchableOpacity, RefreshControl, TextInput
+    TouchableOpacity, RefreshControl, Platform, Dimensions
 } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { appointmentApi } from '../api/appointments';
-import {
-    Calendar, Clock, User, Stethoscope, ChevronRight,
-    Search, CheckCircle, XCircle, AlertCircle, Circle
-} from 'lucide-react-native';
+import { Calendar, Clock, ChevronRight, Filter, Plus, AlertCircle, User, CheckCircle2, Circle } from 'lucide-react-native';
+import { layout } from '../utils/layout';
 
-const STATUS_CONFIG = {
-    CONFIRMED: { label: 'Confirmed', color: '#10b981', icon: CheckCircle },
-    COMPLETED: { label: 'Completed', color: '#3b82f6', icon: CheckCircle },
-    CANCELLED: { label: 'Cancelled', color: '#ef4444', icon: XCircle },
-    PENDING: { label: 'Pending', color: '#f59e0b', icon: AlertCircle },
-    SCHEDULED: { label: 'Scheduled', color: '#8b5cf6', icon: Circle },
-};
-
-const StatusBadge = ({ status, colors }) => {
-    const cfg = STATUS_CONFIG[status] || { label: status, color: colors.mutedForeground };
-    const IconComp = cfg.icon || Circle;
-    return (
-        <View style={[styles.badge, { backgroundColor: cfg.color + '18', borderColor: cfg.color + '40' }]}>
-            <IconComp size={11} color={cfg.color} />
-            <Text style={[styles.badgeText, { color: cfg.color }]}>{cfg.label}</Text>
-        </View>
-    );
-};
-
-const AppointmentCard = ({ item, colors, onPress }) => {
-    const date = item.date || item.appointmentDate || item.scheduledAt;
-    const formattedDate = date ? new Date(date).toLocaleDateString('en-IN', {
-        day: '2-digit', month: 'short', year: 'numeric'
-    }) : '—';
-    const formattedTime = date ? new Date(date).toLocaleTimeString('en-IN', {
-        hour: '2-digit', minute: '2-digit', hour12: true
-    }) : item.time || '—';
-
-    const patientName = item.patient?.name || item.patientName || 'Unknown Patient';
-    const doctorName = item.doctor?.name || item.doctorName || 'Unknown Doctor';
-
-    return (
-        <TouchableOpacity
-            activeOpacity={0.75}
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-            onPress={onPress}
-        >
-            <View style={styles.cardLeft}>
-                <View style={[styles.avatarBox, { backgroundColor: colors.accentSoft }]}>
-                    <Calendar size={20} color={colors.primary} />
-                </View>
-            </View>
-            <View style={styles.cardBody}>
-                <Text style={[styles.patientName, { color: colors.foreground }]} numberOfLines={1}>
-                    {patientName}
-                </Text>
-                <View style={styles.row}>
-                    <Stethoscope size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.meta, { color: colors.mutedForeground }]} numberOfLines={1}>
-                        {' '}{doctorName}
-                    </Text>
-                </View>
-                <View style={styles.row}>
-                    <Clock size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.meta, { color: colors.mutedForeground }]}>
-                        {' '}{formattedDate}  {formattedTime}
-                    </Text>
-                </View>
-                <StatusBadge status={item.status} colors={colors} />
-            </View>
-            <ChevronRight size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
-    );
-};
-
-const FILTERS = ['All', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AppointmentsScreen = ({ navigation }) => {
     const { colors } = useTheme();
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('All');
+    const [filter, setFilter] = useState('ALL');
     const [error, setError] = useState(null);
 
     const fetchAppointments = useCallback(async () => {
-        setError(null);
         try {
-            const params = {};
-            if (activeFilter !== 'All') params.status = activeFilter;
-
-            const res = await appointmentApi.getAll(params);
-            // Backend may return { appointments: [] } or [] directly
-            const raw = res.data?.appointments || res.data?.data || res.data || [];
-            setAppointments(Array.isArray(raw) ? raw : []);
-        } catch (err) {
-            console.error('AppointmentsScreen fetch error:', err?.response?.data || err.message);
-            setError(err?.response?.data?.message || 'Failed to load appointments. Check your connection or permissions.');
+            setError(null);
+            const response = await appointmentApi.getAll();
+            if (response && response.data) {
+                const data = response.data;
+                const raw = data?.appointments || data?.data || (Array.isArray(data) ? data : []);
+                setAppointments(Array.isArray(raw) ? raw : []);
+            } else {
+                setError("No response from server.");
+            }
+        } catch (e) {
+            console.error('[Appointments] fetch error:', e.message);
+            setError(e?.response?.data?.message || 'Failed to load appointments.');
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [activeFilter]);
+    }, []);
 
     useEffect(() => {
-        setLoading(true);
         fetchAppointments();
     }, [fetchAppointments]);
 
@@ -115,92 +47,123 @@ const AppointmentsScreen = ({ navigation }) => {
         fetchAppointments();
     };
 
-    const filtered = search.trim()
-        ? appointments.filter(a => {
-            const pName = (a.patient?.name || a.patientName || '').toLowerCase();
-            const dName = (a.doctor?.name || a.doctorName || '').toLowerCase();
-            const q = search.toLowerCase();
-            return pName.includes(q) || dName.includes(q);
-        })
-        : appointments;
+    const getStatusStyle = (status) => {
+        switch (status?.toUpperCase()) {
+            case 'CONFIRMED': return { bg: '#dcfce7', text: '#166534', icon: CheckCircle2 };
+            case 'CANCELLED': return { bg: '#fee2e2', text: '#991b1b', icon: AlertCircle };
+            case 'PENDING': return { bg: '#fef9c3', text: '#854d0e', icon: Clock };
+            default: return { bg: '#f3f4f6', text: '#374151', icon: Circle };
+        }
+    };
+
+    const filteredData = appointments.filter(appt => {
+        if (filter === 'ALL') return true;
+        return appt.status?.toUpperCase() === filter;
+    });
+
+    const renderAppointment = ({ item }) => {
+        const patient = item.patient || {};
+        const status = getStatusStyle(item.status);
+
+        return (
+            <TouchableOpacity
+                style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                onPress={() => navigation.navigate('AppointmentDetail', { appointmentId: item.id, appointment: item })}
+                activeOpacity={0.7}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={[styles.statusPill, { backgroundColor: status.bg }]}>
+                        <status.icon size={12} color={status.text} />
+                        <Text style={[styles.statusText, { color: status.text }]}>{item.status || 'Scheduled'}</Text>
+                    </View>
+                    <Text style={[styles.dateText, { color: colors.mutedForeground }]}>
+                        {item.date ? new Date(item.date).toLocaleDateString() : 'No date'}
+                    </Text>
+                </View>
+
+                <View style={styles.cardBody}>
+                    <View style={[styles.userIcon, { backgroundColor: colors.accentSoft }]}>
+                        <User size={20} color={colors.primary} />
+                    </View>
+                    <View style={styles.info}>
+                        <Text style={[styles.patientName, { color: colors.foreground }]} numberOfLines={1}>
+                            {patient.name || 'Unknown Patient'}
+                        </Text>
+                        <View style={styles.timeRow}>
+                            <Clock size={13} color={colors.mutedForeground} />
+                            <Text style={[styles.timeText, { color: colors.mutedForeground }]}>
+                                {item.time || 'TBD'}
+                            </Text>
+                        </View>
+                    </View>
+                    <ChevronRight size={18} color={colors.mutedForeground} opacity={0.5} />
+                </View>
+
+                {item.type && (
+                    <View style={[styles.typeFooter, { borderTopColor: colors.border }]}>
+                        <Text style={[styles.typeText, { color: colors.mutedForeground }]}>{item.type}</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
+        );
+    };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Search bar */}
-            <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                <Search size={18} color={colors.mutedForeground} />
-                <TextInput
-                    style={[styles.searchInput, { color: colors.foreground }]}
-                    placeholder="Search patient or doctor…"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={search}
-                    onChangeText={setSearch}
-                />
+        <View style={[styles.container, { backgroundColor: colors.background, paddingTop: layout.statusBarHeight }]}>
+            <View style={styles.header}>
+                <Text style={[styles.title, { color: colors.foreground }]}>Appointments</Text>
+                <TouchableOpacity
+                    style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                >
+                    <Plus size={20} color="#fff" />
+                </TouchableOpacity>
             </View>
 
-            {/* Status filter pills */}
-            <FlatList
-                data={FILTERS}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={i => i}
-                contentContainerStyle={styles.filterRow}
-                renderItem={({ item }) => {
-                    const active = activeFilter === item;
-                    return (
+            <View style={styles.filterBar}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+                    {['ALL', 'CONFIRMED', 'PENDING', 'CANCELLED'].map((f) => (
                         <TouchableOpacity
-                            onPress={() => setActiveFilter(item)}
+                            key={f}
+                            onPress={() => setFilter(f)}
                             style={[
-                                styles.pill,
-                                { borderColor: active ? colors.primary : colors.cardBorder },
-                                active && { backgroundColor: colors.primary }
+                                styles.filterItem,
+                                { borderColor: filter === f ? colors.primary : colors.cardBorder, backgroundColor: filter === f ? colors.primary : colors.card }
                             ]}
                         >
-                            <Text style={[
-                                styles.pillText,
-                                { color: active ? '#fff' : colors.mutedForeground }
-                            ]}>
-                                {item}
+                            <Text style={[styles.filterText, { color: filter === f ? '#fff' : colors.mutedForeground }]}>
+                                {f.charAt(0) + f.slice(1).toLowerCase()}
                             </Text>
                         </TouchableOpacity>
-                    );
-                }}
-            />
+                    ))}
+                </ScrollView>
+            </View>
 
-            {/* Content */}
-            {loading ? (
+            {loading && !refreshing ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
-                        Loading appointments…
-                    </Text>
                 </View>
             ) : error ? (
                 <View style={styles.center}>
-                    <AlertCircle size={48} color="#ef4444" />
-                    <Text style={[styles.errorText, { color: '#ef4444' }]}>{error}</Text>
-                    <TouchableOpacity
-                        onPress={() => { setLoading(true); fetchAppointments(); }}
-                        style={[styles.retryBtn, { backgroundColor: colors.primary }]}
-                    >
+                    <AlertCircle size={48} color="#ef4444" opacity={0.5} />
+                    <Text style={[styles.errorText, { color: colors.mutedForeground }]}>{error}</Text>
+                    <TouchableOpacity onPress={onRefresh} style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
                         <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
-                    data={filtered}
+                    data={filteredData}
                     keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-                    renderItem={({ item }) => <AppointmentCard item={item} colors={colors} onPress={() => navigation.navigate('AppointmentDetail', { appointmentId: item.id, appointment: item })} />}
+                    renderItem={renderAppointment}
                     contentContainerStyle={styles.list}
+                    showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
                     }
                     ListEmptyComponent={
-                        <View style={styles.center}>
-                            <Calendar size={52} color={colors.cardBorder} />
-                            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                                No appointments found
-                            </Text>
+                        <View style={styles.emptyContainer}>
+                            <Calendar size={64} color={colors.mutedForeground} opacity={0.2} />
+                            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No appointments found</Text>
                         </View>
                     }
                 />
@@ -211,47 +174,52 @@ const AppointmentsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    searchBar: {
-        flexDirection: 'row', alignItems: 'center',
-        margin: 16, borderRadius: 12, borderWidth: 1,
-        paddingHorizontal: 14, height: 46,
+    header: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingHorizontal: 20, paddingVertical: 16
     },
-    searchInput: { flex: 1, fontSize: 15, marginLeft: 10 },
-    filterRow: { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
-    pill: {
-        paddingHorizontal: 14, paddingVertical: 6,
-        borderRadius: 20, borderWidth: 1,
+    title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+    addBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2 },
+    filterBar: { marginBottom: 12 },
+    filterScroll: { paddingHorizontal: 20, gap: 8 },
+    filterItem: {
+        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1,
     },
-    pillText: { fontSize: 13, fontWeight: '500' },
-    list: { paddingHorizontal: 16, paddingBottom: 24 },
+    filterText: { fontSize: 13, fontWeight: '700' },
+    list: { paddingHorizontal: 20, paddingBottom: 30 },
     card: {
-        flexDirection: 'row', alignItems: 'center',
-        borderRadius: 14, borderWidth: 1,
-        padding: 14, marginBottom: 12,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+        borderRadius: 22, borderWidth: 1, marginBottom: 16, overflow: 'hidden',
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10 },
+            android: { elevation: 3 }
+        })
     },
-    cardLeft: { marginRight: 14 },
-    avatarBox: {
-        width: 44, height: 44, borderRadius: 12,
-        justifyContent: 'center', alignItems: 'center',
+    cardHeader: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        padding: 12, paddingHorizontal: 16
     },
-    cardBody: { flex: 1 },
-    patientName: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
-    row: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-    meta: { fontSize: 13 },
-    badge: {
-        flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-        borderWidth: 1, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3,
-        marginTop: 6, gap: 4,
+    statusPill: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12
     },
-    badgeText: { fontSize: 11, fontWeight: '600' },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60, gap: 12 },
-    loadingText: { fontSize: 14, marginTop: 10 },
-    errorText: { fontSize: 15, textAlign: 'center', paddingHorizontal: 30, lineHeight: 22 },
-    retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
-    retryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-    emptyText: { fontSize: 16, marginTop: 10 },
+    statusText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
+    dateText: { fontSize: 12, fontWeight: '600' },
+    cardBody: {
+        flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 4
+    },
+    userIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    info: { flex: 1, gap: 2 },
+    patientName: { fontSize: 16, fontWeight: '700' },
+    timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    timeText: { fontSize: 13, fontWeight: '500' },
+    typeFooter: { padding: 8, paddingHorizontal: 16, borderTopWidth: 1, alignItems: 'flex-end' },
+    typeText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+    errorText: { marginTop: 12, textAlign: 'center', fontSize: 15, fontWeight: '500' },
+    retryBtn: { marginTop: 20, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 },
+    retryText: { color: '#fff', fontWeight: '700' },
+    emptyContainer: { alignItems: 'center', marginTop: 100, gap: 16 },
+    emptyText: { fontSize: 15, fontWeight: '500', textAlign: 'center' },
 });
 
 export default AppointmentsScreen;
