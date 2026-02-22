@@ -43,10 +43,10 @@ const LiquidGlass = ({
                 ]}
             >
                 {/* Thin inner border / highlight (Liquid specific) */}
-                <View style={[styles.innerBorder, { borderColor: 'rgba(255,255,255,0.08)', borderRadius: borderRadius }]} pointerEvents="none" />
+                <View style={[styles.innerBorder, { borderColor: 'rgba(255,255,255,0.08)', borderRadius: borderRadius, pointerEvents: 'none' }]} />
 
                 {/* Top refraction line */}
-                <View style={[styles.highlight, { backgroundColor: g.highlight }]} pointerEvents="none" />
+                <View style={[styles.highlight, { backgroundColor: g.highlight, pointerEvents: 'none' }]} />
 
                 {children}
             </BlurView>
@@ -58,9 +58,12 @@ const styles = StyleSheet.create({
     outer: {
         ...Platform.select({
             ios: {
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.1,
-                shadowRadius: 16,
+                boxShadow: [{
+                    offsetX: 0,
+                    offsetY: 8,
+                    blur: 16,
+                    color: 'rgba(0,0,0,0.1)',
+                }],
             },
             android: { elevation: 6 },
         }),

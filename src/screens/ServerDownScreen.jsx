@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { ServerCrash, RefreshCw, Clock } from 'lucide-react-native';
+import { USE_NATIVE } from '../utils/animations';
 
 const ServerDownScreen = ({ onRetry }) => {
     const { colors } = useTheme();
@@ -16,18 +17,18 @@ const ServerDownScreen = ({ onRetry }) => {
         Animated.loop(
             Animated.timing(spin, {
                 toValue: 1, duration: 8000,
-                useNativeDriver: true,
+                useNativeDriver: USE_NATIVE,
             })
         ).start();
 
         // Shake every 4 seconds
         const doShake = () => {
             Animated.sequence([
-                Animated.timing(shake, { toValue: 8, duration: 60, useNativeDriver: true }),
-                Animated.timing(shake, { toValue: -8, duration: 60, useNativeDriver: true }),
-                Animated.timing(shake, { toValue: 6, duration: 60, useNativeDriver: true }),
-                Animated.timing(shake, { toValue: -6, duration: 60, useNativeDriver: true }),
-                Animated.timing(shake, { toValue: 0, duration: 60, useNativeDriver: true }),
+                Animated.timing(shake, { toValue: 8, duration: 60, useNativeDriver: USE_NATIVE }),
+                Animated.timing(shake, { toValue: -8, duration: 60, useNativeDriver: USE_NATIVE }),
+                Animated.timing(shake, { toValue: 6, duration: 60, useNativeDriver: USE_NATIVE }),
+                Animated.timing(shake, { toValue: -6, duration: 60, useNativeDriver: USE_NATIVE }),
+                Animated.timing(shake, { toValue: 0, duration: 60, useNativeDriver: USE_NATIVE }),
             ]).start(() => setTimeout(doShake, 4000));
         };
         doShake();

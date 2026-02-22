@@ -7,7 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
 import {
-    LayoutDashboard, Users, Zap, Calendar, Stethoscope,
+    LayoutDashboard, Users, Zap, Calendar, Stethoscope, Bot,
 } from 'lucide-react-native';
 import LiquidGlass from '../components/LiquidGlass';
 import DashboardScreen from '../screens/DashboardScreen';
@@ -17,70 +17,36 @@ import DoctorsNavigator from './DoctorsNavigator';
 import { useTheme } from '../theme/ThemeContext';
 import { useChat } from '../components/Chat/ChatContext';
 import { layout } from '../utils/layout';
-import { SPRING, useRotate } from '../utils/animations';
 
 const Tab = createBottomTabNavigator();
 
-// ── Centre Nyra FAB ───────────────────────────────────────────────
 const NyraFab = ({ colors }) => {
-    const spin = useRotate(18000);
-    const pulse = useRef(new Animated.Value(1)).current;
-
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulse, { toValue: 1.10, duration: 2200, useNativeDriver: true }),
-                Animated.timing(pulse, { toValue: 1, duration: 2200, useNativeDriver: true }),
-            ])
-        ).start();
-    }, []);
-
     return (
-        <Animated.View style={[styles.fabOuter, { transform: [{ scale: pulse }] }]}>
-            <View style={[styles.fabRing, { borderColor: colors.primary + '30' }]}>
-                <LiquidGlass
-                    intensity={colors.glass.blurStrong}
-                    tint={colors.glass.tint}
-                    containerStyle={styles.fabGlass}
-                    padding={0}
-                >
-                    <View style={[styles.fabCore, { backgroundColor: '#000' }]}>
-                        <Video
-                            source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
-                            style={styles.fabVideo}
-                            resizeMode={ResizeMode.COVER}
-                            shouldPlay
-                            isLooping
-                            isMuted
-                        />
-                        <View style={styles.fabGlowInner} />
-                    </View>
-                </LiquidGlass>
-            </View>
-        </Animated.View>
+        <View style={styles.fabOuter}>
+            <Video
+                source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
+                style={styles.fabVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay
+                isLooping
+                isMuted
+                useNativeControls={false}
+            />
+        </View>
     );
 };
 
 // ── Animated tab icon ─────────────────────────────────────────────
 const TabIcon = ({ Icon, focused, color }) => {
-    const scale = useRef(new Animated.Value(1)).current;
-
-    useEffect(() => {
-        Animated.spring(scale, {
-            toValue: focused ? 1.18 : 1,
-            ...SPRING.snappy,
-        }).start();
-    }, [focused]);
-
     return (
-        <Animated.View style={[styles.iconWrap, { transform: [{ scale }] }]}>
+        <View style={styles.iconWrap}>
             {focused && <View style={[styles.iconBg, { backgroundColor: color + '18' }]} />}
             <Icon
-                size={focused ? 23 : 22}
+                size={22}
                 color={color}
                 strokeWidth={focused ? 2.5 : 2}
             />
-        </Animated.View>
+        </View>
     );
 };
 
@@ -114,7 +80,11 @@ const GlassTabBar = ({ state, descriptors, navigation, colors, openChat }) => {
                                 <TouchableOpacity
                                     key={route.key}
                                     onPress={() => {
-                                        navigation.emit({ type: 'tabPress', target: route.key });
+                                        navigation.emit({
+                                            type: 'tabPress',
+                                            target: route.key,
+                                            canPreventDefault: true,
+                                        });
                                         openChat?.();
                                     }}
                                     style={styles.fabSlot}
@@ -197,7 +167,14 @@ const styles = StyleSheet.create({
     bar: {
         borderRadius: 30, borderWidth: 1.2, overflow: 'hidden',
         ...Platform.select({
-            ios: { shadowOffset: { width: 0, height: -4 }, shadowOpacity: 1, shadowRadius: 20 },
+            ios: {
+                boxShadow: [{
+                    offsetX: 0,
+                    offsetY: -4,
+                    blur: 20,
+                    color: 'rgba(0,0,0,0.3)', // Softened for better look
+                }],
+            },
             android: { elevation: 14 },
         }),
     },
@@ -221,29 +198,15 @@ const styles = StyleSheet.create({
         flex: 1, alignItems: 'center', justifyContent: 'center',
         marginTop: -30,
     },
-    fabOuter: { width: 60, height: 60 },
-    fabRing: {
-        width: 60, height: 60, borderRadius: 30, borderWidth: 2,
-        justifyContent: 'center', alignItems: 'center',
-    },
-    fabGlass: {
-        width: 54, height: 54, borderRadius: 27, overflow: 'hidden', borderWidth: 1.5,
-        ...Platform.select({
-            ios: { shadowColor: '#2563eb', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.45, shadowRadius: 12 },
-            android: { elevation: 16 },
-        }),
-    },
-    fabCore: {
-        flex: 1, margin: 2, borderRadius: 25,
-        justifyContent: 'center', alignItems: 'center',
-        position: 'relative', overflow: 'hidden',
+    fabOuter: {
+        width: 65,
+        height: 65,
+        borderRadius: 32.5,
+        overflow: 'hidden',
+        backgroundColor: '#000'
     },
     fabVideo: {
-        width: '100%', height: '100%',
-    },
-    fabGlowInner: {
-        position: 'absolute', width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)', top: -10, right: -10,
+        flex: 1,
     },
 });
 

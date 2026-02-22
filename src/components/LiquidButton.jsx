@@ -33,7 +33,14 @@ const LiquidButton = ({
                 {/* Double Layer Shadow (Liquid Effect) */}
                 <View style={[
                     styles.shadowLayer,
-                    { shadowColor: variant === 'primary' ? activeColors.primary : g.shadowDeep }
+                    Platform.OS === 'ios' && {
+                        boxShadow: [{
+                            offsetX: 0,
+                            offsetY: 10,
+                            blur: 20,
+                            color: (variant === 'primary' ? activeColors.primary : g.shadowDeep) + '26',
+                        }]
+                    }
                 ]} />
 
                 <BlurView
@@ -78,11 +85,6 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         borderRadius: 20,
         ...Platform.select({
-            ios: {
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.15,
-                shadowRadius: 20,
-            },
             android: { elevation: 6 },
         }),
     },

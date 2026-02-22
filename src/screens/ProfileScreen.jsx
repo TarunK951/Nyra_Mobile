@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import { LogOut, User, Mail, Shield, Bell, Lock, ChevronRight, Moon, Sun } from 'lucide-react-native';
 import { layout } from '../utils/layout';
-import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
+import { useStagger, useScalePressAnim, SPRING, USE_NATIVE } from '../utils/animations';
 
 const GlassMenuRow = ({ icon: Icon, label, color, onPress, index, colors, anim }) => {
     const g = colors.glass;
@@ -43,7 +43,7 @@ const ProfileScreen = () => {
         toggleTheme();
         Animated.spring(switchAnim, {
             toValue: themeMode === 'dark' ? 0 : 1,
-            tension: 200, friction: 14, useNativeDriver: true,
+            tension: 200, friction: 14, useNativeDriver: USE_NATIVE,
         }).start();
     };
     const thumbX = switchAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 22] });
@@ -166,7 +166,10 @@ const styles = StyleSheet.create({
     scroll: { paddingHorizontal: 20 },
     avatarWrap: {
         width: 104, height: 104, borderRadius: 38, overflow: 'hidden', borderWidth: 1.5,
-        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24 }, android: { elevation: 12 } }),
+        ...Platform.select({
+            ios: { boxShadow: [{ offsetX: 0, offsetY: 12, blur: 24, color: 'rgba(0,0,0,0.15)' }] },
+            android: { elevation: 12 },
+        }),
     },
     avatarGlow: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.08)', top: -30, left: -30 },
     avatarInner: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -175,7 +178,10 @@ const styles = StyleSheet.create({
 
     glassCard: {
         borderRadius: 28, borderWidth: 1, overflow: 'hidden', marginBottom: 16,
-        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 20 }, android: { elevation: 6 } }),
+        ...Platform.select({
+            ios: { boxShadow: [{ offsetX: 0, offsetY: 8, blur: 20, color: 'rgba(0,0,0,0.08)' }] },
+            android: { elevation: 6 },
+        }),
     },
     cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
     menuRow: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
@@ -189,7 +195,10 @@ const styles = StyleSheet.create({
     switchTrack: { width: 50, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3 },
     switchThumb: {
         width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
-        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6 }, android: { elevation: 4 } }),
+        ...Platform.select({
+            ios: { boxShadow: [{ offsetX: 0, offsetY: 4, blur: 6, color: 'rgba(0,0,0,0.2)' }] },
+            android: { elevation: 4 },
+        }),
     },
 
     logoutCard: {

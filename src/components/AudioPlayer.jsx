@@ -319,8 +319,17 @@ const styles = S({
     playBtn: {
         width: 54, height: 54, borderRadius: 27,
         justifyContent: 'center', alignItems: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.18, shadowRadius: 6, elevation: 5,
+        ...Platform.select({
+            ios: {
+                boxShadow: [{
+                    offsetX: 0,
+                    offsetY: 3,
+                    blur: 6,
+                    color: 'rgba(0,0,0,0.18)',
+                }],
+            },
+            android: { elevation: 5 },
+        }),
     },
     speed: { fontSize: 14, fontWeight: '700' },
     errBox: { borderRadius: 12, borderWidth: 1, padding: 14, alignItems: 'center', marginBottom: 12 },

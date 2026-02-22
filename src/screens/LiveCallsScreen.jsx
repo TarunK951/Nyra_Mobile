@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     StyleSheet, View, Text, FlatList, ActivityIndicator,
-    TouchableOpacity, RefreshControl, Animated, Alert, Platform,
+    TouchableOpacity, RefreshControl, Animated, Alert, Platform, ScrollView
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native';
 import LiquidGlass from '../components/LiquidGlass';
 import { layout } from '../utils/layout';
-import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
+import { useStagger, useScalePressAnim, SPRING, USE_NATIVE } from '../utils/animations';
 
 function getFmtDate(c) {
     const raw = c?.started_at || c?.startedAt || c?.created_at || c?.createdAt;
@@ -57,12 +57,12 @@ const PulsingRing = ({ color }) => {
     useEffect(() => {
         Animated.loop(Animated.parallel([
             Animated.sequence([
-                Animated.timing(scale, { toValue: 1.6, duration: 1200, useNativeDriver: true }),
-                Animated.timing(scale, { toValue: 1, duration: 1200, useNativeDriver: true }),
+                Animated.timing(scale, { toValue: 1.6, duration: 1200, useNativeDriver: USE_NATIVE }),
+                Animated.timing(scale, { toValue: 1, duration: 1200, useNativeDriver: USE_NATIVE }),
             ]),
             Animated.sequence([
-                Animated.timing(opacity, { toValue: 0.1, duration: 1200, useNativeDriver: true }),
-                Animated.timing(opacity, { toValue: 0.8, duration: 1200, useNativeDriver: true }),
+                Animated.timing(opacity, { toValue: 0.1, duration: 1200, useNativeDriver: USE_NATIVE }),
+                Animated.timing(opacity, { toValue: 0.8, duration: 1200, useNativeDriver: USE_NATIVE }),
             ]),
         ])).start();
     }, []);

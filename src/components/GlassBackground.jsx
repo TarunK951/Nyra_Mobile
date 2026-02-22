@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Animated, Platform, Dimensions, Easing } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { USE_NATIVE } from '../utils/animations';
 
 const { width, height } = Dimensions.get('window');
 
@@ -16,13 +17,13 @@ const Orb = ({ color, size, delay, duration, startPos, amplitude = 40 }) => {
                         toValue: to,
                         duration: duration,
                         easing: Easing.inOut(Easing.sin),
-                        useNativeDriver: true,
+                        useNativeDriver: USE_NATIVE,
                     }),
                     Animated.timing(val, {
                         toValue: 0,
                         duration: duration,
                         easing: Easing.inOut(Easing.sin),
-                        useNativeDriver: true,
+                        useNativeDriver: USE_NATIVE,
                     }),
                 ])
             );
@@ -69,7 +70,7 @@ const GlassBackground = ({ children }) => {
     return (
         <View style={[styles.root, { backgroundColor: colors.background }]}>
             {/* Background Orbs — Liquid & Morphing patterns */}
-            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
                 {/* Large primary bloobs */}
                 <Orb
                     color={colors.primary}

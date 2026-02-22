@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { WifiOff, RefreshCw } from 'lucide-react-native';
+import { USE_NATIVE } from '../utils/animations';
 
 const OfflineScreen = ({ onRetry }) => {
     const { colors } = useTheme();
@@ -13,8 +14,8 @@ const OfflineScreen = ({ onRetry }) => {
     React.useEffect(() => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(pulse, { toValue: 1, duration: 1200, useNativeDriver: true }),
-                Animated.timing(pulse, { toValue: 0.85, duration: 1200, useNativeDriver: true }),
+                Animated.timing(pulse, { toValue: 1, duration: 1200, useNativeDriver: USE_NATIVE }),
+                Animated.timing(pulse, { toValue: 0.85, duration: 1200, useNativeDriver: USE_NATIVE }),
             ])
         ).start();
     }, []);

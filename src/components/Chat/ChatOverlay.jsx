@@ -9,6 +9,7 @@ import {
     User, ChevronRight, LayoutDashboard, Bot, History
 } from 'lucide-react-native';
 import { Video, ResizeMode } from 'expo-av';
+import { USE_NATIVE } from '../../utils/animations';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../theme/ThemeContext';
 import { aiApi } from '../../api/ai';
@@ -25,28 +26,20 @@ const { width } = Dimensions.get('window');
 
 // ─── Animated FAB Brain Avatar ────────────────
 export const NyraAvatar = ({ size = 44, color }) => {
-    const pulse = useRef(new Animated.Value(1)).current;
-
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulse, { toValue: 1.08, duration: 2500, useNativeDriver: true }),
-                Animated.timing(pulse, { toValue: 1, duration: 2500, useNativeDriver: true }),
-            ])
-        ).start();
-    }, []);
-
     return (
-        <Animated.View style={{ transform: [{ scale: pulse }], width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: '#000' }}>
-            <Video
-                source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping
-                isMuted
-            />
-        </Animated.View>
+        <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={StyleSheet.absoluteFill}>
+                <Video
+                    source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay
+                    isLooping
+                    isMuted
+                />
+            </View>
+            <Bot size={size * 0.6} color="#6366f1" strokeWidth={1.5} opacity={0.6} />
+        </View>
     );
 };
 
@@ -57,14 +50,7 @@ const MessageBubble = ({ message, colors, onActionPress }) => {
         <View style={[styles.messageRow, isAi ? styles.aiRow : styles.userRow]}>
             {isAi && (
                 <View style={[styles.avatarSmall, { backgroundColor: '#000' }]}>
-                    <Video
-                        source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode={ResizeMode.COVER}
-                        shouldPlay
-                        isLooping
-                        isMuted
-                    />
+                    <NyraAvatar size={24} />
                 </View>
             )}
             <View style={styles.bubbleCol}>

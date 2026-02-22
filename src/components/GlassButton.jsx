@@ -1,6 +1,7 @@
 // ─── GlassButton — iOS 26 Liquid Glass Button ────────────────────
 import React, { useRef, useCallback } from 'react';
 import { Animated, TouchableOpacity, Text, View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { USE_NATIVE } from '../utils/animations';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
     primary: {
         borderRadius: 16, overflow: 'hidden',
         ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+            ios: { boxShadow: [{ offsetX: 0, offsetY: 4, blur: 8, color: 'rgba(0,0,0,0.2)' }] },
             android: { elevation: 4 },
         }),
     },

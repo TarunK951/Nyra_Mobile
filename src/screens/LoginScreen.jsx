@@ -11,7 +11,7 @@ import { useTheme } from '../theme/ThemeContext';
 import LiquidButton from '../components/LiquidButton';
 import LiquidGlass from '../components/LiquidGlass';
 import { Mail, Lock, ArrowRight, Bot, UserCheck } from 'lucide-react-native';
-import { useFadeIn, useSlideUp, useStagger, useScalePressAnim, SPRING } from '../utils/animations';
+import { useFadeIn, useSlideUp, useStagger, useScalePressAnim, SPRING, USE_NATIVE } from '../utils/animations';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -21,8 +21,8 @@ const Orb = ({ x, y, size, color, delay, duration = 6000 }) => {
     useEffect(() => {
         const t = setTimeout(() => {
             Animated.loop(Animated.sequence([
-                Animated.timing(anim, { toValue: 1, duration, useNativeDriver: true }),
-                Animated.timing(anim, { toValue: 0, duration, useNativeDriver: true }),
+                Animated.timing(anim, { toValue: 1, duration, useNativeDriver: USE_NATIVE }),
+                Animated.timing(anim, { toValue: 0, duration, useNativeDriver: USE_NATIVE }),
             ])).start();
         }, delay);
         return () => clearTimeout(t);
@@ -101,7 +101,7 @@ const LoginScreen = () => {
     const logoRotate = useRef(new Animated.Value(0)).current;
     useEffect(() => {
         Animated.loop(
-            Animated.timing(logoRotate, { toValue: 1, duration: 30000, useNativeDriver: true })
+            Animated.timing(logoRotate, { toValue: 1, duration: 30000, useNativeDriver: USE_NATIVE })
         ).start();
     }, []);
     const spin = logoRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center', alignItems: 'center',
         borderWidth: 1.5, overflow: 'hidden',
         ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 24 },
+            ios: { boxShadow: [{ offsetX: 0, offsetY: 12, blur: 24, color: 'rgba(0,0,0,0.2)' }] },
             android: { elevation: 12 },
         }),
     },
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
         borderRadius: 36, borderWidth: 1.5, overflow: 'hidden',
         padding: 30,
         ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.18, shadowRadius: 36 },
+            ios: { boxShadow: [{ offsetX: 0, offsetY: 16, blur: 36, color: 'rgba(0,0,0,0.18)' }] },
             android: { elevation: 12 },
         }),
     },

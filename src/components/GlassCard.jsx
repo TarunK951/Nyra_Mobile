@@ -1,6 +1,7 @@
 // ─── GlassCard — Core iOS 26 Liquid Glass Surface ─────────────────
 import React, { useRef, useEffect } from 'react';
 import { View, Animated, Platform, StyleSheet } from 'react-native';
+import { USE_NATIVE } from '../utils/animations';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -25,10 +26,10 @@ const GlassCard = ({
         const t = setTimeout(() => {
             Animated.parallel([
                 Animated.timing(opacity, {
-                    toValue: 1, duration: 380, useNativeDriver: true,
+                    toValue: 1, duration: 380, useNativeDriver: USE_NATIVE,
                 }),
                 Animated.spring(translateY, {
-                    toValue: 0, tension: 180, friction: 18, useNativeDriver: true,
+                    toValue: 0, tension: 180, friction: 18, useNativeDriver: USE_NATIVE,
                 }),
             ]).start();
         }, animDelay);
@@ -38,7 +39,19 @@ const GlassCard = ({
     const blurIntensity = intensity ?? g.blur;
 
     const content = (
-        <View style={[styles.outer, { borderRadius: radius, shadowColor: g.shadow }, style]}>
+        <View style={[
+            styles.outer,
+            { borderRadius: radius },
+            Platform.OS === 'ios' && {
+                boxShadow: [{
+                    offsetX: 0,
+                    offsetY: 8,
+                    blur: 24,
+                    color: g.shadow || 'rgba(0,0,0,0.1)',
+                }]
+            },
+            style
+        ]}>
             <BlurView
                 intensity={blurIntensity}
                 tint={g.tint}
@@ -81,11 +94,6 @@ const styles = StyleSheet.create({
     outer: {
         overflow: 'hidden',
         ...Platform.select({
-            ios: {
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 1,
-                shadowRadius: 24,
-            },
             android: { elevation: 8 },
         }),
     },
