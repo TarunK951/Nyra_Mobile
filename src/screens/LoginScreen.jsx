@@ -1,14 +1,88 @@
-import React, { useState } from 'react';
+// ─── iOS 26 Liquid Glass Login Screen ───────────────────────────
+import React, { useState, useRef, useEffect } from 'react';
 import {
     StyleSheet, View, Text, TextInput, TouchableOpacity,
     ActivityIndicator, KeyboardAvoidingView, Platform,
-    Image, StatusBar, Dimensions
+    StatusBar, Animated, Dimensions,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
-import { Mail, Lock, ChevronRight, Sparkles, ArrowRight } from 'lucide-react-native';
+import { Mail, Lock, ArrowRight, Sparkles, UserCheck } from 'lucide-react-native';
+import { useFadeIn, useSlideUp, useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: W, height: H } = Dimensions.get('window');
+
+// ── Floating glass orb decoration ────────────────────────────────
+const Orb = ({ x, y, size, color, delay, duration = 6000 }) => {
+    const anim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        const t = setTimeout(() => {
+            Animated.loop(Animated.sequence([
+                Animated.timing(anim, { toValue: 1, duration, useNativeDriver: true }),
+                Animated.timing(anim, { toValue: 0, duration, useNativeDriver: true }),
+            ])).start();
+        }, delay);
+        return () => clearTimeout(t);
+    }, []);
+    const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
+    const scale = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.1, 1] });
+    return (
+        <Animated.View style={[styles.orb, {
+            left: x, top: y, width: size, height: size, borderRadius: size / 2,
+            backgroundColor: color, transform: [{ translateY }, { scale }],
+            backgroundColor: color + '40', transform: [{ translateY }, { scale }],
+            opacity: 0.6,
+        }]} />
+    );
+};
+
+// ── Animated glass input ─────────────────────────────────────────
+const GlassInput = ({ icon: Icon, value, onChangeText, placeholder, secureTextEntry, keyboardType, colors, anim }) => {
+    const [focused, setFocused] = useState(false);
+    const borderAnim = useRef(new Animated.Value(0)).current;
+
+    const onFocus = () => {
+        setFocused(true);
+        Animated.spring(borderAnim, { toValue: 1, ...SPRING.snappy }).start();
+    };
+    const onBlur = () => {
+        setFocused(false);
+        Animated.spring(borderAnim, { toValue: 0, ...SPRING.gentle }).start();
+    };
+
+    const borderColor = borderAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [colors.glass.border, colors.primary],
+    });
+
+    return (
+        <Animated.View style={anim ? { borderColor, borderWidth: 1.5, borderRadius: 20, marginBottom: 14, opacity: anim.opacity, transform: [{ translateY: anim.translateY }] } : { borderColor, borderWidth: 1.5, borderRadius: 20, marginBottom: 14 }}>
+            <BlurView
+                intensity={colors.glass.blurStrong}
+                tint={colors.glass.tint}
+                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                style={styles.inputBlur}
+            >
+                <View style={[styles.inputIcon, { backgroundColor: focused ? colors.primary + '15' : 'transparent' }]}>
+                    <Icon size={18} color={focused ? colors.primary : colors.mutedForeground} strokeWidth={2.5} />
+                </View>
+                <TextInput
+                    style={[styles.input, { color: colors.foreground }]}
+                    value={value}
+                    onChangeText={onChangeText}
+                    placeholder={placeholder}
+                    placeholderTextColor={colors.mutedForeground}
+                    secureTextEntry={secureTextEntry}
+                    keyboardType={keyboardType}
+                    autoCapitalize="none"
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                />
+            </BlurView>
+        </Animated.View>
+    );
+};
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
@@ -18,132 +92,193 @@ const LoginScreen = () => {
     const { login } = useAuth();
     const { colors, themeMode } = useTheme();
 
+    const headerOpacity = useFadeIn(0);
+    const staggerAnims = useStagger(5, 100);
+    const { scale: btnScale, pressIn, pressOut } = useScalePressAnim();
+
+    const logoRotate = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        Animated.loop(
+            Animated.timing(logoRotate, { toValue: 1, duration: 30000, useNativeDriver: true })
+        ).start();
+    }, []);
+    const spin = logoRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
     const handleLogin = async () => {
-        if (!email || !password) {
-            setError('Please enter your credentials');
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-
+        if (!email || !password) { setError('Please fill in all fields'); return; }
+        setLoading(true); setError('');
         const result = await login({ email, password });
-
-        if (!result.success) {
-            setError(result.error);
-        }
+        if (!result.success) setError(result.error || 'Login failed');
         setLoading(false);
     };
 
+    // Background gradient orbs — More liquid glass feel
+    const orbs = [
+        { x: -100, y: -100, size: 300, color: colors.primary, delay: 0 },
+        { x: W - 150, y: 150, size: 250, color: '#a855f7', delay: 1000 },
+        { x: W / 2 - 150, y: H - 350, size: 300, color: colors.primary, delay: 500 },
+        { x: -50, y: H - 150, size: 200, color: '#3b82f6', delay: 2000 },
+    ];
+
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.screen, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'} />
+
+            {/* Floating orb decorations */}
+            {orbs.map((o, i) => <Orb key={i} {...o} />)}
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.inner}
+                style={styles.kav}
             >
-                {/* Branding Section */}
-                <View style={styles.header}>
-                    <View style={[styles.logoBox, { backgroundColor: colors.primary }]}>
-                        <Sparkles size={32} color="#fff" strokeWidth={2.5} />
-                    </View>
+                {/* Logo / Header */}
+                <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
+                    <BlurView
+                        intensity={40}
+                        tint={colors.glass.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.logoBox, { borderColor: colors.glass.border }]}
+                    >
+                        <View style={styles.logoGlow} />
+                        <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                            <Sparkles size={38} color={colors.primary} strokeWidth={2.5} />
+                        </Animated.View>
+                    </BlurView>
                     <Text style={[styles.title, { color: colors.foreground }]}>NyraAI</Text>
+                    <View style={styles.badgeRow}>
+                        <View style={[styles.statusBadge, { backgroundColor: colors.primary + '15' }]}>
+                            <UserCheck size={10} color={colors.primary} strokeWidth={3} />
+                            <Text style={[styles.statusText, { color: colors.primary }]}>SECURE ACCESS</Text>
+                        </View>
+                    </View>
                     <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-                        Smart Clinic Management
+                        Clinical workflow, reimagined for modern doctors.
                     </Text>
-                </View>
+                </Animated.View>
 
-                {/* Form Section */}
-                <View style={styles.form}>
+                {/* Glass login card */}
+                <BlurView
+                    intensity={colors.glass.blurStrong}
+                    tint={colors.glass.tint}
+                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                    style={[styles.card, { borderColor: colors.glass.border }]}
+                >
+                    <View style={[styles.cardShimmer, { backgroundColor: colors.glass.shimmer }]} />
+                    <View style={styles.cardGlow} />
+
                     {error ? (
-                        <View style={[styles.errorBox, { backgroundColor: '#fee2e2' }]}>
+                        <View style={styles.errorBox}>
                             <Text style={styles.errorText}>{error}</Text>
                         </View>
                     ) : null}
 
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.mutedForeground }]}>Email or Phone</Text>
-                        <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                            <Mail size={18} color={colors.primary} style={styles.inputIcon} />
-                            <TextInput
-                                style={[styles.input, { color: colors.foreground }]}
-                                placeholder="name@clinic.com"
-                                placeholderTextColor={colors.mutedForeground}
-                                value={email}
-                                onChangeText={(val) => { setEmail(val); setError(''); }}
-                                autoCapitalize="none"
-                            />
-                        </View>
-                    </View>
+                    <GlassInput
+                        icon={Mail}
+                        value={email}
+                        onChangeText={(v) => { setEmail(v); setError(''); }}
+                        placeholder="doctor@clinic.com"
+                        colors={colors}
+                        anim={staggerAnims[0]}
+                    />
 
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: colors.mutedForeground }]}>Password</Text>
-                        <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                            <Lock size={18} color={colors.primary} style={styles.inputIcon} />
-                            <TextInput
-                                style={[styles.input, { color: colors.foreground }]}
-                                placeholder="••••••••"
-                                placeholderTextColor={colors.mutedForeground}
-                                value={password}
-                                onChangeText={(val) => { setPassword(val); setError(''); }}
-                                secureTextEntry
-                            />
-                        </View>
-                    </View>
+                    <GlassInput
+                        icon={Lock}
+                        value={password}
+                        onChangeText={(v) => { setPassword(v); setError(''); }}
+                        placeholder="••••••••"
+                        secureTextEntry
+                        colors={colors}
+                        anim={staggerAnims[1]}
+                    />
 
-                    <TouchableOpacity
-                        style={[styles.loginBtn, { backgroundColor: colors.primary }]}
-                        onPress={handleLogin}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <View style={styles.btnContent}>
-                                <Text style={styles.loginBtnText}>Sign In to Dashboard</Text>
-                                <ArrowRight size={20} color="#fff" />
-                            </View>
-                        )}
-                    </TouchableOpacity>
+                    {/* Login button */}
+                    <Animated.View style={staggerAnims[2] ? { opacity: staggerAnims[2].opacity, transform: [{ translateY: staggerAnims[2].translateY }, { scale: btnScale }] } : { transform: [{ scale: btnScale }] }}>
+                        <TouchableOpacity
+                            onPress={handleLogin}
+                            onPressIn={pressIn}
+                            onPressOut={pressOut}
+                            disabled={loading}
+                            activeOpacity={1}
+                            style={[styles.loginBtn, { backgroundColor: colors.foreground }]}
+                        >
+                            {loading
+                                ? <ActivityIndicator color={colors.background} />
+                                : <>
+                                    <Text style={[styles.loginBtnText, { color: colors.background }]}>Sign Into Nyra</Text>
+                                    <ArrowRight size={20} color={colors.background} strokeWidth={3} />
+                                </>
+                            }
+                        </TouchableOpacity>
+                    </Animated.View>
 
-                    <TouchableOpacity style={styles.forgotBtn}>
-                        <Text style={[styles.forgotText, { color: colors.primary }]}>Difficulty signing in? Contact Admin</Text>
-                    </TouchableOpacity>
-                </View>
+                    <Animated.View style={staggerAnims[3] ? { opacity: staggerAnims[3].opacity, transform: [{ translateY: staggerAnims[3].translateY }] } : {}}>
+                        <TouchableOpacity style={styles.forgotBtn}>
+                            <Text style={[styles.forgotText, { color: colors.primary }]}>
+                                Need help? Contact your Admin
+                            </Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+                </BlurView>
 
                 {/* Footer */}
-                <View style={styles.footer}>
+                <Animated.View style={[styles.footer, { opacity: headerOpacity }]}>
                     <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
-                        Protecting your healthcare data with enterprise grade security.
+                        Enterprise-grade security for healthcare data
                     </Text>
-                </View>
+                </Animated.View>
             </KeyboardAvoidingView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    inner: { flex: 1, paddingHorizontal: 32, justifyContent: 'center' },
-    header: { alignItems: 'center', marginBottom: 48 },
-    logoBox: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 16, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-    title: { fontSize: 32, fontWeight: '900', letterSpacing: -1 },
-    subtitle: { fontSize: 15, fontWeight: '500', marginTop: 4 },
-    form: { width: '100%' },
-    errorBox: { padding: 12, borderRadius: 12, marginBottom: 20, alignItems: 'center' },
-    errorText: { color: '#b91c1c', fontSize: 13, fontWeight: '600' },
-    inputGroup: { marginBottom: 20 },
-    label: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginLeft: 4 },
-    inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 16, height: 56 },
-    inputIcon: { marginRight: 12, opacity: 0.8 },
-    input: { flex: 1, fontSize: 16, fontWeight: '500' },
-    loginBtn: { borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center', marginTop: 12, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-    btnContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    loginBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-    forgotBtn: { marginTop: 24, alignItems: 'center' },
-    forgotText: { fontSize: 14, fontWeight: '600' },
-    footer: { position: 'absolute', bottom: 40, left: 32, right: 32, alignItems: 'center' },
-    footerText: { fontSize: 12, textAlign: 'center', opacity: 0.7, lineHeight: 18 },
+    screen: { flex: 1, overflow: 'hidden' },
+    kav: { flex: 1, paddingHorizontal: 28, justifyContent: 'center', gap: 32 },
+    orb: { position: 'absolute', opacity: 0.4 },
+    header: { alignItems: 'center', gap: 12, marginBottom: 4 },
+    logoBox: {
+        width: 84, height: 84, borderRadius: 30,
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 1.5, overflow: 'hidden',
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 24 },
+            android: { elevation: 12 },
+        }),
+    },
+    logoGlow: { position: 'absolute', width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.15)', blurRadius: 20 },
+    title: { fontSize: 44, fontWeight: '900', letterSpacing: -2, marginBottom: -4 },
+    badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 },
+    statusText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+    subtitle: { fontSize: 15, fontWeight: '600', textAlign: 'center', maxWidth: '80%', lineHeight: 22 },
+    card: {
+        borderRadius: 36, borderWidth: 1.5, overflow: 'hidden',
+        padding: 30,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.18, shadowRadius: 36 },
+            android: { elevation: 12 },
+        }),
+    },
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, zIndex: 10, opacity: 0.8 },
+    cardGlow: { position: 'absolute', top: -100, left: -100, width: 200, height: 200, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 100 },
+    inputBlur: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 60, gap: 14 },
+    inputIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+    input: { flex: 1, fontSize: 17, fontWeight: '700' },
+    errorBox: { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: 16, padding: 14, marginBottom: 18, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
+    errorText: { color: '#ef4444', fontSize: 13, fontWeight: '700' },
+    loginBtn: {
+        borderRadius: 20, height: 60,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16 },
+            android: { elevation: 8 },
+        }),
+    },
+    loginBtnText: { fontSize: 17, fontWeight: '900', letterSpacing: -0.2 },
+    forgotBtn: { alignItems: 'center', marginTop: 20 },
+    forgotText: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, opacity: 0.6 },
+    footer: { alignItems: 'center', marginTop: 12 },
+    footerText: { fontSize: 12, fontWeight: '700', textAlign: 'center', opacity: 0.4, letterSpacing: 0.5 },
 });
 
 export default LoginScreen;

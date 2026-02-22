@@ -2,14 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet, View, Text, ScrollView, TouchableOpacity,
     ActivityIndicator, Switch, Alert, RefreshControl, Modal,
-    TextInput, Platform
+    TextInput, Platform, Animated
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { doctorApi } from '../api/doctors';
 import {
-    Moon, Sun, Sunrise, Sunset, Plus, Trash2,
-    Clock, IndianRupee, Copy, Settings, ChevronLeft, AlertCircle
+    Moon, Sun, Sunrise, Plus, Trash2,
+    Clock, IndianRupee, Copy, Settings, ChevronLeft,
 } from 'lucide-react-native';
+import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim } from '../utils/animations';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -50,9 +53,10 @@ function countSlots(start, end, duration) {
 const AddSlotModal = ({ visible, onClose, onSave, colors }) => {
     const [start, setStart] = useState('09:00');
     const [end, setEnd] = useState('17:00');
+    const g = colors.glass;
 
     const handleSave = () => {
-        if (!start || !end) { Alert.alert('Error', 'Please enter start and end times.'); return; }
+        if (!start || !end) { Alert.alert('Error', 'Enter times.'); return; }
         onSave(start, end);
         setStart('09:00');
         setEnd('17:00');
@@ -60,33 +64,43 @@ const AddSlotModal = ({ visible, onClose, onSave, colors }) => {
     };
 
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={styles.modalOverlay}>
-                <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+                <BlurView
+                    intensity={g.blurStrong}
+                    tint={g.tint}
+                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                    style={[styles.modalSheet, { borderColor: g.border }]}
+                >
+                    <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
                     <Text style={[styles.modalTitle, { color: colors.foreground }]}>Add Time Slot</Text>
-                    <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>Start Time (HH:MM, 24h)</Text>
-                    <TextInput
-                        style={[styles.modalInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.cardBorder }]}
-                        value={start} onChangeText={setStart}
-                        placeholder="09:00" placeholderTextColor={colors.mutedForeground}
-                        keyboardType="numeric"
-                    />
-                    <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>End Time (HH:MM, 24h)</Text>
-                    <TextInput
-                        style={[styles.modalInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.cardBorder }]}
-                        value={end} onChangeText={setEnd}
-                        placeholder="17:00" placeholderTextColor={colors.mutedForeground}
-                        keyboardType="numeric"
-                    />
+                    <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>Start Time (24h)</Text>
+                    <BlurView intensity={g.blur} tint={g.tint} style={[styles.modalInputWrap, { borderColor: g.borderSubtle }]}>
+                        <TextInput
+                            style={[styles.modalInput, { color: colors.foreground }]}
+                            value={start} onChangeText={setStart}
+                            placeholder="09:00" placeholderTextColor={colors.mutedForeground}
+                            keyboardType="numeric"
+                        />
+                    </BlurView>
+                    <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>End Time (24h)</Text>
+                    <BlurView intensity={g.blur} tint={g.tint} style={[styles.modalInputWrap, { borderColor: g.borderSubtle }]}>
+                        <TextInput
+                            style={[styles.modalInput, { color: colors.foreground }]}
+                            value={end} onChangeText={setEnd}
+                            placeholder="17:00" placeholderTextColor={colors.mutedForeground}
+                            keyboardType="numeric"
+                        />
+                    </BlurView>
                     <View style={styles.modalBtns}>
                         <TouchableOpacity onPress={onClose} style={[styles.modalBtn, { backgroundColor: colors.muted }]}>
-                            <Text style={{ color: colors.mutedForeground, fontWeight: '600' }}>Cancel</Text>
+                            <Text style={{ color: colors.foreground, fontWeight: '800' }}>Cancel</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={handleSave} style={[styles.modalBtn, { backgroundColor: colors.primary }]}>
-                            <Text style={{ color: '#fff', fontWeight: '600' }}>Add Slot</Text>
+                            <Text style={{ color: '#fff', fontWeight: '800' }}>Add Slot</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </BlurView>
             </View>
         </Modal>
     );
@@ -95,19 +109,20 @@ const AddSlotModal = ({ visible, onClose, onSave, colors }) => {
 // ─── Slot Pill ───────────────────────────────────────────────────────────────
 const SlotPill = ({ slot, duration, colors, onDelete }) => {
     const count = countSlots(slot.startTime, slot.endTime, duration);
+    const g = colors.glass;
     return (
-        <View style={[styles.slotPill, { backgroundColor: colors.accentSoft, borderColor: colors.cardBorder }]}>
-            <Clock size={14} color={colors.primary} />
+        <View style={[styles.slotPill, { backgroundColor: colors.primary + '08', borderColor: g.borderSubtle }]}>
+            <Clock size={14} color={colors.primary} strokeWidth={2.5} />
             <Text style={[styles.slotTime, { color: colors.foreground }]}>
                 {to12h(slot.startTime)}  –  {to12h(slot.endTime)}
             </Text>
             {count > 0 && (
-                <View style={[styles.slotCountBadge, { backgroundColor: colors.primary + '20' }]}>
+                <View style={[styles.slotCountBadge, { backgroundColor: colors.primary + '18' }]}>
                     <Text style={[styles.slotCountText, { color: colors.primary }]}>{count} SLOTS</Text>
                 </View>
             )}
-            <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Trash2 size={15} color="#ef4444" />
+            <TouchableOpacity onPress={onDelete} style={styles.deleteSlotBtn}>
+                <Trash2 size={14} color={colors.error} />
             </TouchableOpacity>
         </View>
     );
@@ -117,8 +132,8 @@ const SlotPill = ({ slot, duration, colors, onDelete }) => {
 const DayCard = ({ dayName, dayData = {}, duration, colors, onToggle, onAddSlot, onDeleteSlot, onCopy }) => {
     const enabled = dayData.enabled ?? false;
     const slots = dayData.slots ?? [];
+    const g = colors.glass;
 
-    // Group slots by period
     function slotsInPeriod(periodKey) {
         return slots.filter(s => {
             const h = parseInt((s.startTime || '00:00').split(':')[0], 10);
@@ -131,8 +146,13 @@ const DayCard = ({ dayName, dayData = {}, duration, colors, onToggle, onAddSlot,
     }
 
     return (
-        <View style={[styles.dayCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-            {/* Day Header */}
+        <BlurView
+            intensity={g.blur}
+            tint={g.tint}
+            experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+            style={[styles.dayCard, { borderColor: g.border }]}
+        >
+            <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
             <View style={styles.dayHeader}>
                 <Switch
                     value={enabled}
@@ -142,34 +162,28 @@ const DayCard = ({ dayName, dayData = {}, duration, colors, onToggle, onAddSlot,
                 />
                 <Text style={[styles.dayName, { color: colors.foreground }]}>{dayName}</Text>
                 <View style={styles.dayActions}>
-                    <TouchableOpacity onPress={() => { }} style={styles.iconBtn}>
-                        <Settings size={17} color={colors.mutedForeground} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={onCopy} style={styles.iconBtn}>
-                        <Copy size={17} color={colors.mutedForeground} />
+                    <TouchableOpacity onPress={onCopy} style={[styles.iconBtn, { backgroundColor: colors.primary + '12' }]}>
+                        <Copy size={16} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
             </View>
 
             {enabled && (
-                <>
+                <View style={styles.expandedContent}>
                     {PERIODS.map(period => {
                         const PeriodIcon = period.icon;
                         const periodSlots = slotsInPeriod(period.key);
                         return (
                             <View key={period.key} style={styles.periodBlock}>
-                                {/* Period label */}
                                 <View style={styles.periodLabelRow}>
-                                    <PeriodIcon size={15} color={period.color} />
-                                    <Text style={[styles.periodLabel, { color: period.color }]}>
+                                    <View style={[styles.periodDot, { backgroundColor: period.color }]} />
+                                    <Text style={[styles.periodLabel, { color: colors.foreground }]}>
                                         {period.label}
                                     </Text>
                                 </View>
 
                                 {periodSlots.length === 0 ? (
-                                    <Text style={[styles.noSlots, { color: colors.mutedForeground }]}>
-                                        No slots
-                                    </Text>
+                                    <Text style={[styles.noSlots, { color: colors.mutedForeground }]}>No slots defined</Text>
                                 ) : (
                                     periodSlots.map((slot, idx) => (
                                         <SlotPill
@@ -182,20 +196,19 @@ const DayCard = ({ dayName, dayData = {}, duration, colors, onToggle, onAddSlot,
                                     ))
                                 )}
 
-                                {/* Add Slot button */}
                                 <TouchableOpacity
                                     onPress={() => onAddSlot(period.key)}
-                                    style={[styles.addSlotBtn, { borderColor: colors.cardBorder }]}
+                                    style={[styles.addSlotBtn, { borderColor: colors.primary + '40' }]}
                                 >
-                                    <Plus size={14} color={colors.primary} />
+                                    <Plus size={14} color={colors.primary} strokeWidth={3} />
                                     <Text style={[styles.addSlotText, { color: colors.primary }]}>Add Slot</Text>
                                 </TouchableOpacity>
                             </View>
                         );
                     })}
-                </>
+                </View>
             )}
-        </View>
+        </BlurView>
     );
 };
 
@@ -338,26 +351,32 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
 
     const specialtyLabel = doctor?.specialty || doctor?.specialization || doctor?.department || '';
 
+    const g = colors.glass;
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* ── Custom header ── */}
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.cardBorder }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <ChevronLeft size={22} color={colors.primary} />
+            {/* ── Glass Header ── */}
+            <BlurView
+                intensity={g.blurStrong}
+                tint={g.tint}
+                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                style={[styles.header, { borderBottomColor: g.borderSubtle }]}
+            >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.muted }]}>
+                    <ChevronLeft size={22} color={colors.foreground} />
                 </TouchableOpacity>
                 <View style={styles.headerMid}>
                     <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-                        Schedule: {doctor?.name || 'Doctor'}
+                        {doctor?.name || 'Schedule'}
                     </Text>
-                    {!!specialtyLabel && (
-                        <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-                            {specialtyLabel}
-                        </Text>
-                    )}
+                    <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
+                        Availability Settings
+                    </Text>
                 </View>
                 <TouchableOpacity
                     onPress={saveSchedule}
                     disabled={saving}
+                    activeOpacity={0.8}
                     style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
                 >
                     {saving
@@ -365,7 +384,7 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
                         : <Text style={styles.saveBtnText}>Save</Text>
                     }
                 </TouchableOpacity>
-            </View>
+            </BlurView>
 
             {loading ? (
                 <View style={styles.center}>
@@ -377,17 +396,25 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
                 >
                     {/* ── Config Card ── */}
-                    <View style={[styles.configCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                        {/* Slot duration */}
-                        <Text style={[styles.configLabel, { color: colors.mutedForeground }]}>SLOT DURATION</Text>
+                    {/* ── Glass Config Card ── */}
+                    <BlurView
+                        intensity={g.blur}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.configCard, { borderColor: g.border }]}
+                    >
+                        <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
+
+                        <Text style={[styles.configLabel, { color: colors.primary }]}>SLOT DURATION</Text>
                         <TouchableOpacity
                             onPress={() => setShowDurationPicker(p => !p)}
-                            style={[styles.durationSelector, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
+                            style={[styles.durationSelector, { backgroundColor: colors.primary + '08', borderColor: g.borderSubtle }]}
                         >
                             <Clock size={16} color={colors.primary} />
                             <Text style={[styles.durationValue, { color: colors.foreground }]}>{slotDuration} mins</Text>
                             <ChevronLeft size={16} color={colors.mutedForeground} style={{ transform: [{ rotate: '-90deg' }] }} />
                         </TouchableOpacity>
+
                         {showDurationPicker && (
                             <View style={styles.durationOptions}>
                                 {SLOT_DURATIONS.map(d => (
@@ -396,25 +423,24 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
                                         onPress={() => { setSlotDuration(d); setShowDurationPicker(false); }}
                                         style={[
                                             styles.durationOption,
-                                            { borderColor: colors.cardBorder },
-                                            slotDuration === d && { backgroundColor: colors.primary }
+                                            { borderColor: g.borderSubtle },
+                                            slotDuration === d && { backgroundColor: colors.primary, borderColor: colors.primary }
                                         ]}
                                     >
                                         <Text style={[
                                             styles.durationOptionText,
-                                            { color: slotDuration === d ? '#fff' : colors.foreground }
+                                            { color: slotDuration === d ? '#fff' : colors.foreground, fontWeight: slotDuration === d ? '800' : '600' }
                                         ]}>
-                                            {d} min
+                                            {d}m
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
                         )}
 
-                        {/* Consultation Fee */}
-                        <Text style={[styles.configLabel, { color: colors.mutedForeground, marginTop: 16 }]}>CONSULTATION FEE</Text>
-                        <View style={[styles.feeInput, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}>
-                            <IndianRupee size={16} color={colors.mutedForeground} />
+                        <Text style={[styles.configLabel, { color: colors.primary, marginTop: 20 }]}>CONSULTATION FEE</Text>
+                        <View style={[styles.feeInput, { backgroundColor: colors.primary + '08', borderColor: g.borderSubtle }]}>
+                            <IndianRupee size={16} color={colors.primary} />
                             <TextInput
                                 style={[styles.feeInputText, { color: colors.foreground }]}
                                 value={consultFee}
@@ -424,20 +450,7 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
                                 placeholderTextColor={colors.mutedForeground}
                             />
                         </View>
-
-                        {/* Period pills */}
-                        <View style={styles.periodPills}>
-                            {PERIOD_FILTER_PILLS.map(p => {
-                                const PIcon = p.icon;
-                                return (
-                                    <View key={p.key} style={[styles.periodPill, { backgroundColor: p.color + '18', borderColor: p.color + '40' }]}>
-                                        <PIcon size={12} color={p.color} />
-                                        <Text style={[styles.periodPillText, { color: p.color }]}>{p.label}</Text>
-                                    </View>
-                                );
-                            })}
-                        </View>
-                    </View>
+                    </BlurView>
 
                     {/* ── Day Cards ── */}
                     {DAYS.map(day => (
@@ -474,112 +487,83 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     header: {
         flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 54 : 16, paddingBottom: 14,
-        borderBottomWidth: 1, gap: 10,
+        paddingHorizontal: 16, paddingTop: layout.statusBarHeight + 4, paddingBottom: 14,
+        borderBottomWidth: 1, gap: 10, overflow: 'hidden',
     },
-    backBtn: { padding: 4 },
+    backBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     headerMid: { flex: 1 },
-    headerTitle: { fontSize: 17, fontWeight: '700' },
-    headerSub: { fontSize: 13, marginTop: 1 },
+    headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
+    headerSub: { fontSize: 13, fontWeight: '600' },
     saveBtn: {
-        paddingHorizontal: 18, paddingVertical: 8,
-        borderRadius: 10, minWidth: 60, alignItems: 'center',
+        paddingHorizontal: 20, paddingVertical: 10,
+        borderRadius: 14, minWidth: 70, alignItems: 'center',
     },
-    saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+    saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 14, textTransform: 'uppercase' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    body: { padding: 16, gap: 16 },
+    body: { padding: 16, gap: 16, paddingTop: 10 },
 
     // Config card
-    configCard: {
-        borderRadius: 16, borderWidth: 1, padding: 18,
-    },
-    configLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 8 },
+    configCard: { borderRadius: 24, borderWidth: 1, padding: 20, overflow: 'hidden' },
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5 },
+    configLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginBottom: 10 },
     durationSelector: {
         flexDirection: 'row', alignItems: 'center',
-        borderRadius: 10, borderWidth: 1, padding: 12, gap: 10,
+        borderRadius: 14, borderWidth: 1, padding: 14, gap: 10,
     },
-    durationValue: { flex: 1, fontSize: 16 },
-    durationOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-    durationOption: {
-        paddingHorizontal: 14, paddingVertical: 7,
-        borderRadius: 8, borderWidth: 1,
-    },
-    durationOptionText: { fontSize: 14 },
+    durationValue: { flex: 1, fontSize: 16, fontWeight: '700' },
+    durationOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+    durationOption: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5 },
+    durationOptionText: { fontSize: 13 },
     feeInput: {
         flexDirection: 'row', alignItems: 'center',
-        borderRadius: 10, borderWidth: 1, padding: 12, gap: 8,
+        borderRadius: 14, borderWidth: 1, padding: 14, gap: 10,
     },
-    feeInputText: { flex: 1, fontSize: 16 },
-    periodPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
-    periodPill: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 10, paddingVertical: 5,
-        borderRadius: 20, borderWidth: 1, gap: 5,
-    },
-    periodPillText: { fontSize: 12, fontWeight: '500' },
+    feeInputText: { flex: 1, fontSize: 17, fontWeight: '700' },
 
     // Day card
-    dayCard: {
-        borderRadius: 16, borderWidth: 1, overflow: 'hidden',
-    },
-    dayHeader: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 16, paddingVertical: 14, gap: 12,
-    },
-    dayName: { flex: 1, fontSize: 17, fontWeight: '700' },
-    dayActions: { flexDirection: 'row', gap: 8 },
-    iconBtn: { padding: 4 },
+    dayCard: { borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
+    dayHeader: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
+    dayName: { flex: 1, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
+    dayActions: { flexDirection: 'row', gap: 10 },
+    iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    expandedContent: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
 
     // Period block
-    periodBlock: {
-        borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.04)',
-        paddingHorizontal: 16, paddingVertical: 14,
-    },
-    periodLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-    periodLabel: { fontSize: 14, fontWeight: '600' },
-    noSlots: { fontSize: 13, textAlign: 'center', marginBottom: 10, fontStyle: 'italic' },
+    periodBlock: { padding: 18, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
+    periodLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+    periodDot: { width: 6, height: 6, borderRadius: 3 },
+    periodLabel: { fontSize: 14, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+    noSlots: { fontSize: 13, textAlign: 'center', marginVertical: 10, opacity: 0.5, fontWeight: '600' },
 
     // Slot pill
     slotPill: {
         flexDirection: 'row', alignItems: 'center',
-        borderRadius: 10, borderWidth: 1,
-        paddingHorizontal: 12, paddingVertical: 10,
-        marginBottom: 8, gap: 8,
+        borderRadius: 12, borderWidth: 1,
+        paddingHorizontal: 14, paddingVertical: 12,
+        marginBottom: 10, gap: 10,
     },
-    slotTime: { flex: 1, fontSize: 14, fontWeight: '500' },
-    slotCountBadge: {
-        paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20,
-    },
-    slotCountText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+    slotTime: { flex: 1, fontSize: 15, fontWeight: '700' },
+    slotCountBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+    slotCountText: { fontSize: 10, fontWeight: '900' },
+    deleteSlotBtn: { padding: 4 },
 
     // Add slot button
     addSlotBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        borderRadius: 10, borderWidth: 1, borderStyle: 'dashed',
-        paddingVertical: 10, gap: 6,
+        borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed',
+        paddingVertical: 12, gap: 8, marginTop: 4,
     },
-    addSlotText: { fontSize: 14, fontWeight: '600' },
+    addSlotText: { fontSize: 14, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
 
     // Modal
-    modalOverlay: {
-        flex: 1, justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0,0,0,0.45)',
-    },
-    modalSheet: {
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: 24, paddingBottom: 40,
-    },
-    modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 20 },
-    modalLabel: { fontSize: 13, marginBottom: 6 },
-    modalInput: {
-        borderRadius: 10, borderWidth: 1, padding: 12,
-        fontSize: 16, marginBottom: 16,
-    },
-    modalBtns: { flexDirection: 'row', gap: 12, marginTop: 4 },
-    modalBtn: {
-        flex: 1, paddingVertical: 13, borderRadius: 12,
-        alignItems: 'center', justifyContent: 'center',
-    },
+    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 20 },
+    modalSheet: { width: '100%', borderRadius: 30, padding: 24, borderWidth: 1, overflow: 'hidden' },
+    modalTitle: { fontSize: 22, fontWeight: '900', marginBottom: 20, letterSpacing: -0.5 },
+    modalLabel: { fontSize: 13, fontWeight: '700', marginBottom: 8, opacity: 0.7 },
+    modalInputWrap: { borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 16, overflow: 'hidden' },
+    modalInput: { fontSize: 16, fontWeight: '800' },
+    modalBtns: { flexDirection: 'row', gap: 12, marginTop: 8 },
+    modalBtn: { flex: 1, paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default DoctorScheduleScreen;

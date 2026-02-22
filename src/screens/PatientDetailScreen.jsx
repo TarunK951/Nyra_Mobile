@@ -1,23 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet, View, Text, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Platform, Alert,
+    ActivityIndicator, RefreshControl, Platform, Alert, Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { patientApi } from '../api/patients';
 import { appointmentApi } from '../api/appointments';
 import { callApi } from '../api/calls';
 import {
     ChevronLeft, User, Phone, Mail, Calendar, MapPin,
-    FileText, Clock, AlertCircle, PhoneCall, MessageSquare,
+    AlertCircle, PhoneCall, MessageSquare,
     Activity, ChevronRight, Heart,
 } from 'lucide-react-native';
 import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
 const InfoRow = ({ icon: Icon, label, value, colors }) => (
     value ? (
         <View style={styles.infoRow}>
-            <Icon size={15} color={colors.mutedForeground} />
+            <View style={[styles.infoIcon, { backgroundColor: colors.muted }]}>
+                <Icon size={14} color={colors.primary} strokeWidth={2.5} />
+            </View>
             <View style={styles.infoText}>
                 <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</Text>
                 <Text style={[styles.infoValue, { color: colors.foreground }]}>{value}</Text>
@@ -26,12 +30,23 @@ const InfoRow = ({ icon: Icon, label, value, colors }) => (
     ) : null
 );
 
-const Section = ({ title, children, colors }) => (
-    <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
-        {children}
-    </View>
-);
+const Section = ({ title, children, colors, anim }) => {
+    const g = colors.glass;
+    return (
+        <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }] } : {}}>
+            <BlurView
+                intensity={g.blur}
+                tint={g.tint}
+                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                style={[styles.section, { borderColor: g.border }]}
+            >
+                <View style={[styles.secShimmer, { backgroundColor: g.shimmer }]} />
+                <Text style={[styles.sectionTitle, { color: colors.primary }]}>{title}</Text>
+                {children}
+            </BlurView>
+        </Animated.View>
+    );
+};
 
 const PatientDetailScreen = ({ route, navigation }) => {
     const { colors } = useTheme();
@@ -124,22 +139,32 @@ const PatientDetailScreen = ({ route, navigation }) => {
         );
     }
 
+    const staggerAnims = useStagger(6, 80);
+    const g = colors.glass;
+    const { scale: callScale, pressIn: callIn, pressOut: callOut } = useScalePressAnim();
+    const { scale: mailScale, pressIn: mailIn, pressOut: mailOut } = useScalePressAnim();
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.cardBorder }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <ChevronLeft size={22} color={colors.primary} />
+            {/* Glass Header */}
+            <BlurView
+                intensity={g.blurStrong}
+                tint={g.tint}
+                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                style={[styles.header, { borderBottomColor: g.borderSubtle }]}
+            >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.muted }]}>
+                    <ChevronLeft size={22} color={colors.foreground} strokeWidth={2.5} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
                     <Text style={[styles.headerTitle, { color: colors.foreground }]} numberOfLines={1}>
-                        {patient.name || 'Patient'}
+                        Patient Detail
                     </Text>
                     {!!patient.uhid && (
-                        <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>UHID: {patient.uhid}</Text>
+                        <Text style={[styles.headerSub, { color: colors.primary }]}>UHID: {patient.uhid}</Text>
                     )}
                 </View>
-            </View>
+            </BlurView>
 
             <ScrollView
                 contentContainerStyle={styles.scroll}
@@ -147,53 +172,58 @@ const PatientDetailScreen = ({ route, navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Avatar Hero */}
-                <View style={[styles.heroCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <View style={[styles.avatarLarge, { backgroundColor: colors.accentSoft }]}>
-                        <User size={40} color={colors.primary} />
-                    </View>
-                    <Text style={[styles.heroName, { color: colors.foreground }]}>{patient.name}</Text>
-                    {!!patient.phone && (
-                        <Text style={[styles.heroPhone, { color: colors.mutedForeground }]}>{patient.phone}</Text>
-                    )}
-                    {!!(gender || bloodGroup) && (
-                        <View style={styles.heroRow}>
-                            {!!gender && (
-                                <View style={[styles.pill, { backgroundColor: colors.accentSoft }]}>
-                                    <Text style={[styles.pillTxt, { color: colors.primary }]}>{gender}</Text>
-                                </View>
-                            )}
-                            {!!bloodGroup && (
-                                <View style={[styles.pill, { backgroundColor: '#fef2f2' }]}>
-                                    <Heart size={11} color="#ef4444" />
-                                    <Text style={[styles.pillTxt, { color: '#ef4444' }]}>{bloodGroup}</Text>
-                                </View>
-                            )}
+                <Animated.View style={staggerAnims[0] ? { opacity: staggerAnims[0].opacity, transform: [{ translateY: staggerAnims[0].translateY }] } : {}}>
+                    <BlurView
+                        intensity={g.blurStrong}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.heroCard, { borderColor: g.border }]}
+                    >
+                        <View style={[styles.secShimmer, { backgroundColor: g.shimmer }]} />
+                        <View style={[styles.avatarLarge, { backgroundColor: colors.primary + '12' }]}>
+                            <User size={44} color={colors.primary} strokeWidth={2.5} />
                         </View>
-                    )}
-                    {/* Quick actions */}
-                    <View style={styles.actions}>
+                        <Text style={[styles.heroName, { color: colors.foreground }]}>{patient.name}</Text>
                         {!!patient.phone && (
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '40' }]}
-                                onPress={() => Alert.alert('Call', `Call ${patient.phone}?`)}
-                            >
-                                <PhoneCall size={16} color={colors.primary} />
-                                <Text style={[styles.actionTxt, { color: colors.primary }]}>Call</Text>
-                            </TouchableOpacity>
+                            <Text style={[styles.heroPhone, { color: colors.mutedForeground }]}>{patient.phone}</Text>
                         )}
-                        {!!patient.email && (
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: '#3b82f618', borderColor: '#3b82f640' }]}
-                            >
-                                <Mail size={16} color="#3b82f6" />
-                                <Text style={[styles.actionTxt, { color: '#3b82f6' }]}>Email</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
+                        <View style={styles.heroRow}>
+                            <View style={[styles.pill, { backgroundColor: colors.primary + '10' }]}>
+                                <Text style={[styles.pillTxt, { color: colors.primary }]}>{gender || 'N/A'}</Text>
+                            </View>
+                            <View style={[styles.pill, { backgroundColor: colors.error + '10' }]}>
+                                <Heart size={12} color={colors.error} strokeWidth={3} />
+                                <Text style={[styles.pillTxt, { color: colors.error }]}>{bloodGroup || 'O+'}</Text>
+                            </View>
+                        </View>
+
+                        {/* Quick actions */}
+                        <View style={styles.actions}>
+                            <Animated.View style={{ transform: [{ scale: callScale }] }}>
+                                <TouchableOpacity
+                                    onPressIn={callIn} onPressOut={callOut}
+                                    style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+                                    onPress={() => Alert.alert('Call', `Call ${patient.phone}?`)}
+                                >
+                                    <PhoneCall size={16} color="#fff" />
+                                    <Text style={[styles.actionTxt, { color: "#fff" }]}>Call</Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                            <Animated.View style={{ transform: [{ scale: mailScale }] }}>
+                                <TouchableOpacity
+                                    onPressIn={mailIn} onPressOut={mailOut}
+                                    style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: g.border }]}
+                                >
+                                    <Mail size={16} color={colors.foreground} />
+                                    <Text style={[styles.actionTxt, { color: colors.foreground }]}>Email</Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                        </View>
+                    </BlurView>
+                </Animated.View>
 
                 {/* Personal Info */}
-                <Section title="Personal Information" colors={colors}>
+                <Section title="Personal Information" colors={colors} anim={staggerAnims[1]}>
                     <InfoRow icon={Phone} label="Phone" value={patient.phone} colors={colors} />
                     <InfoRow icon={Mail} label="Email" value={patient.email} colors={colors} />
                     <InfoRow icon={Calendar} label="Date of Birth" value={dob} colors={colors} />
@@ -203,7 +233,7 @@ const PatientDetailScreen = ({ route, navigation }) => {
                 </Section>
 
                 {/* Recent Appointments */}
-                <Section title={`Recent Appointments (${appointments.length})`} colors={colors}>
+                <Section title={`Recent Appointments`} colors={colors} anim={staggerAnims[2]}>
                     {aptsLoading ? (
                         <ActivityIndicator color={colors.primary} style={{ margin: 12 }} />
                     ) : appointments.length === 0 ? (
@@ -212,7 +242,7 @@ const PatientDetailScreen = ({ route, navigation }) => {
                         const d = apt.date || apt.appointmentDate || apt.scheduledAt;
                         const dateStr = d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
                         return (
-                            <View key={apt.id} style={[styles.miniCard, { borderColor: colors.cardBorder }]}>
+                            <View key={apt.id} style={[styles.miniCard, { backgroundColor: colors.muted, borderColor: g.borderSubtle }]}>
                                 <View style={styles.miniCardLeft}>
                                     <Text style={[styles.miniCardTitle, { color: colors.foreground }]}>
                                         {apt.doctor?.name || apt.doctorName || 'Doctor'}
@@ -221,11 +251,11 @@ const PatientDetailScreen = ({ route, navigation }) => {
                                         {dateStr}
                                     </Text>
                                 </View>
-                                <View style={[styles.statusPill, {
-                                    backgroundColor: apt.status === 'CONFIRMED' ? '#10b98118' : '#6b728018',
+                                <View style={[styles.statusBadge, {
+                                    backgroundColor: apt.status === 'CONFIRMED' ? colors.success + '20' : colors.muted,
                                 }]}>
                                     <Text style={[styles.statusTxt, {
-                                        color: apt.status === 'CONFIRMED' ? '#10b981' : '#6b7280'
+                                        color: apt.status === 'CONFIRMED' ? colors.success : colors.mutedForeground
                                     }]}>{apt.status || '—'}</Text>
                                 </View>
                             </View>
@@ -237,13 +267,13 @@ const PatientDetailScreen = ({ route, navigation }) => {
                             onPress={() => navigation.navigate('Appointments')}
                         >
                             <Text style={[styles.viewAllTxt, { color: colors.primary }]}>View All Appointments</Text>
-                            <ChevronRight size={14} color={colors.primary} />
+                            <ChevronRight size={14} color={colors.primary} strokeWidth={2.5} />
                         </TouchableOpacity>
                     )}
                 </Section>
 
                 {/* Recent Conversations */}
-                <Section title={`Call History (${conversations.length})`} colors={colors}>
+                <Section title={`Call History`} colors={colors} anim={staggerAnims[3]}>
                     {conversations.length === 0 ? (
                         <Text style={[styles.emptyLabel, { color: colors.mutedForeground }]}>No call history</Text>
                     ) : conversations.slice(0, 3).map((c, idx) => {
@@ -253,16 +283,18 @@ const PatientDetailScreen = ({ route, navigation }) => {
                         return (
                             <TouchableOpacity
                                 key={c.id || idx}
-                                style={[styles.miniCard, { borderColor: colors.cardBorder }]}
+                                style={[styles.miniCard, { backgroundColor: colors.muted, borderColor: g.borderSubtle }]}
                                 onPress={() => navigation.navigate('Chat', {
                                     screen: 'ConversationDetail',
                                     params: { conversation: c, conversationId: c.id }
                                 })}
                             >
-                                <MessageSquare size={14} color={colors.primary} />
+                                <View style={styles.iconBox}>
+                                    <MessageSquare size={14} color={colors.primary} />
+                                </View>
                                 <View style={[styles.miniCardLeft, { marginLeft: 8 }]}>
                                     <Text style={[styles.miniCardTitle, { color: colors.foreground }]}>
-                                        {c.call_type || c.type || 'Call'}
+                                        {c.call_type || c.type || 'Inbound Call'}
                                     </Text>
                                     <Text style={[styles.miniCardSub, { color: colors.mutedForeground }]}>{dateStr}</Text>
                                 </View>
@@ -287,72 +319,72 @@ const styles = StyleSheet.create({
 
     header: {
         flexDirection: 'row', alignItems: 'center',
-        paddingTop: layout.statusBarHeight,
-        paddingBottom: 14, paddingHorizontal: 16,
-        borderBottomWidth: 1, gap: 10,
+        paddingTop: layout.statusBarHeight + 4, paddingBottom: 14, paddingHorizontal: 16,
+        borderBottomWidth: 1, gap: 12, overflow: 'hidden',
     },
-    backBtn: { padding: 4 },
+    backBtn: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
     headerCenter: { flex: 1 },
-    headerTitle: { fontSize: 17, fontWeight: '700' },
-    headerSub: { fontSize: 13, marginTop: 2 },
+    headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
+    headerSub: { fontSize: 13, fontWeight: '700', marginTop: 1 },
 
-    scroll: { padding: 16, gap: 16 },
+    scroll: { padding: 20, gap: 18 },
 
     heroCard: {
-        borderRadius: 16, borderWidth: 1, padding: 20,
-        alignItems: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
+        borderRadius: 30, borderWidth: 1, padding: 26,
+        alignItems: 'center', overflow: 'hidden',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 20 }, android: { elevation: 6 } })
     },
     avatarLarge: {
-        width: 80, height: 80, borderRadius: 40,
-        justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+        width: 84, height: 84, borderRadius: 24,
+        justifyContent: 'center', alignItems: 'center', marginBottom: 16,
     },
-    heroName: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
-    heroPhone: { fontSize: 15, marginBottom: 10 },
-    heroRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+    heroName: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5, marginBottom: 4 },
+    heroPhone: { fontSize: 15, fontWeight: '600', opacity: 0.6, marginBottom: 14 },
+    heroRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
     pill: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
-    },
-    pillTxt: { fontSize: 13, fontWeight: '600' },
-    actions: { flexDirection: 'row', gap: 10 },
-    actionBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        borderWidth: 1, borderRadius: 12,
-        paddingHorizontal: 16, paddingVertical: 8,
+        paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12,
     },
-    actionTxt: { fontSize: 14, fontWeight: '600' },
+    pillTxt: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase' },
+    actions: { flexDirection: 'row', gap: 14 },
+    actionBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        borderRadius: 14, paddingHorizontal: 20, paddingVertical: 12, minWidth: 100,
+        justifyContent: 'center',
+    },
+    actionTxt: { fontSize: 14, fontWeight: '800' },
 
     section: {
-        borderRadius: 16, borderWidth: 1, padding: 16,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+        borderRadius: 26, borderWidth: 1, padding: 20, overflow: 'hidden',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 16 }, android: { elevation: 4 } })
     },
-    sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
+    secShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
+    sectionTitle: { fontSize: 12, fontWeight: '900', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 },
 
-    infoRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12, gap: 10 },
+    infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 12 },
+    infoIcon: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
     infoText: { flex: 1 },
-    infoLabel: { fontSize: 12, marginBottom: 2 },
-    infoValue: { fontSize: 15, fontWeight: '500' },
+    infoLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, opacity: 0.6 },
+    infoValue: { fontSize: 15, fontWeight: '700', marginTop: 1 },
 
     miniCard: {
         flexDirection: 'row', alignItems: 'center',
-        borderWidth: 1, borderRadius: 10,
-        padding: 10, marginBottom: 8,
+        borderWidth: 1, borderRadius: 14,
+        padding: 12, marginBottom: 10,
     },
+    iconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
     miniCardLeft: { flex: 1 },
-    miniCardTitle: { fontSize: 14, fontWeight: '500' },
-    miniCardSub: { fontSize: 12, marginTop: 2 },
-    statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
-    statusTxt: { fontSize: 11, fontWeight: '600' },
+    miniCardTitle: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+    miniCardSub: { fontSize: 12, fontWeight: '600', opacity: 0.6, marginTop: 1 },
+    statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    statusTxt: { fontSize: 11, fontWeight: '800' },
 
-    emptyLabel: { fontSize: 14, textAlign: 'center', paddingVertical: 12 },
+    emptyLabel: { fontSize: 14, fontWeight: '600', textAlign: 'center', paddingVertical: 12, opacity: 0.5 },
     viewAll: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 4, marginTop: 4, paddingVertical: 6,
+        gap: 6, marginTop: 10, paddingVertical: 8,
     },
-    viewAllTxt: { fontSize: 13, fontWeight: '600' },
+    viewAllTxt: { fontSize: 14, fontWeight: '800' },
 });
 
 export default PatientDetailScreen;

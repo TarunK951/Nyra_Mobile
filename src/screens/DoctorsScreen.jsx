@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet, View, Text, FlatList, ActivityIndicator,
-    TouchableOpacity, RefreshControl, TextInput
+    TouchableOpacity, RefreshControl, TextInput, Platform, Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { doctorApi } from '../api/doctors';
 import {
     Stethoscope, Search, ChevronRight, AlertCircle,
-    Clock, Star, Phone, Calendar
+    Phone, Calendar,
 } from 'lucide-react-native';
+import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim } from '../utils/animations';
 
 const SPECIALTIES = {
     GENERAL: 'General',
@@ -22,74 +25,75 @@ const SPECIALTIES = {
 
 const COLORS_BY_INDEX = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899'];
 
-const DoctorCard = ({ item, colors, index, onPress }) => {
+const DoctorCard = ({ item, colors, index, onPress, anim }) => {
     const accentColor = COLORS_BY_INDEX[index % COLORS_BY_INDEX.length];
     const specialty = item.specialty || item.specialization || item.department || 'General';
     const qualification = item.qualification || item.qualifications || '';
     const status = item.isAvailable ? 'Available' : 'Unavailable';
+    const g = colors.glass;
+    const { scale, pressIn, pressOut } = useScalePressAnim();
 
     return (
-        <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={onPress}
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-        >
-            {/* Avatar */}
-            <View style={[styles.avatar, { backgroundColor: accentColor + '20' }]}>
-                <Text style={[styles.avatarText, { color: accentColor }]}>
-                    {(item.name || 'D').charAt(0).toUpperCase()}
-                </Text>
-            </View>
-            <View style={styles.cardBody}>
-                <Text style={[styles.doctorName, { color: colors.foreground }]} numberOfLines={1}>
-                    {item.name || 'Unknown Doctor'}
-                </Text>
-                {specialty ? (
-                    <View style={styles.row}>
-                        <Stethoscope size={13} color={accentColor} />
-                        <Text style={[styles.meta, { color: accentColor }]}> {specialty}</Text>
-                    </View>
-                ) : null}
-                {qualification ? (
-                    <Text style={[styles.qual, { color: colors.mutedForeground }]} numberOfLines={1}>
-                        {qualification}
-                    </Text>
-                ) : null}
-                {item.phone ? (
-                    <View style={styles.row}>
-                        <Phone size={12} color={colors.mutedForeground} />
-                        <Text style={[styles.metaSmall, { color: colors.mutedForeground }]}>
-                            {' '}{item.phone}
+        <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }, { scale }] } : { transform: [{ scale }] }}>
+            <TouchableOpacity
+                activeOpacity={1}
+                onPress={onPress}
+                onPressIn={pressIn}
+                onPressOut={pressOut}
+            >
+                <BlurView
+                    intensity={g.blur}
+                    tint={g.tint}
+                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                    style={[styles.card, { borderColor: g.border }]}
+                >
+                    <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
+                    <View style={[styles.avatar, { backgroundColor: accentColor + '15' }]}>
+                        <Text style={[styles.avatarText, { color: accentColor }]}>
+                            {(item.name || 'D').charAt(0).toUpperCase()}
                         </Text>
                     </View>
-                ) : null}
-                {/* Availability badge */}
-                <View style={[
-                    styles.badge,
-                    {
-                        backgroundColor: item.isAvailable ? '#10b98118' : '#ef444418',
-                        borderColor: item.isAvailable ? '#10b98140' : '#ef444440'
-                    }
-                ]}>
-                    <View style={[
-                        styles.dot,
-                        { backgroundColor: item.isAvailable ? '#10b981' : '#ef4444' }
-                    ]} />
-                    <Text style={{
-                        fontSize: 11, fontWeight: '600',
-                        color: item.isAvailable ? '#10b981' : '#ef4444'
-                    }}>
-                        {status}
-                    </Text>
-                </View>
-                {/* View Schedule hint */}
-                <View style={styles.scheduleHint}>
-                    <Calendar size={12} color={colors.primary} />
-                    <Text style={[styles.scheduleHintText, { color: colors.primary }]}>View Schedule</Text>
-                </View>
-            </View>
-            <ChevronRight size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
+                    <View style={styles.cardBody}>
+                        <Text style={[styles.doctorName, { color: colors.foreground }]} numberOfLines={1}>
+                            {item.name || 'Unknown Doctor'}
+                        </Text>
+                        {specialty ? (
+                            <View style={styles.row}>
+                                <Stethoscope size={12} color={accentColor} strokeWidth={2.5} />
+                                <Text style={[styles.meta, { color: colors.mutedForeground }]}> {specialty}</Text>
+                            </View>
+                        ) : null}
+                        {qualification ? (
+                            <Text style={[styles.qual, { color: colors.mutedForeground, opacity: 0.7 }]} numberOfLines={1}>
+                                {qualification}
+                            </Text>
+                        ) : null}
+
+                        <View style={styles.metaRow}>
+                            {/* Availability badge */}
+                            <View style={[
+                                styles.badge,
+                                {
+                                    backgroundColor: item.isAvailable ? colors.success + '12' : colors.error + '12',
+                                    borderColor: item.isAvailable ? colors.success + '30' : colors.error + '30'
+                                }
+                            ]}>
+                                <View style={[styles.dot, { backgroundColor: item.isAvailable ? colors.success : colors.error }]} />
+                                <Text style={[styles.badgeTxt, { color: item.isAvailable ? colors.success : colors.error }]}>
+                                    {status}
+                                </Text>
+                            </View>
+
+                            <View style={styles.scheduleHint}>
+                                <Calendar size={11} color={colors.primary} />
+                                <Text style={[styles.scheduleHintText, { color: colors.primary }]}>VIEW SCHEDULE</Text>
+                            </View>
+                        </View>
+                    </View>
+                    <ChevronRight size={16} color={colors.mutedForeground} opacity={0.4} />
+                </BlurView>
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 
@@ -135,19 +139,27 @@ const DoctorsScreen = ({ navigation }) => {
         })
         : doctors;
 
+    const staggerAnims = useStagger(8, 80);
+    const g = colors.glass;
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Search bar */}
-            <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+            <BlurView
+                intensity={g.blur}
+                tint={g.tint}
+                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                style={[styles.searchBar, { borderColor: g.border }]}
+            >
                 <Search size={18} color={colors.mutedForeground} />
                 <TextInput
                     style={[styles.searchInput, { color: colors.foreground }]}
-                    placeholder="Search by name or specialty…"
+                    placeholder="Search doctors..."
                     placeholderTextColor={colors.mutedForeground}
                     value={search}
                     onChangeText={setSearch}
                 />
-            </View>
+            </BlurView>
 
             {loading ? (
                 <View style={styles.center}>
@@ -176,6 +188,7 @@ const DoctorsScreen = ({ navigation }) => {
                             item={item}
                             colors={colors}
                             index={index}
+                            anim={staggerAnims[Math.min(index, staggerAnims.length - 1)]}
                             onPress={() => navigation.navigate('DoctorSchedule', { doctor: item })}
                         />
                     )}
@@ -208,49 +221,51 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     searchBar: {
         flexDirection: 'row', alignItems: 'center',
-        margin: 16, borderRadius: 12, borderWidth: 1,
-        paddingHorizontal: 14, height: 46,
+        margin: 16, borderRadius: 16, borderWidth: 1,
+        paddingHorizontal: 14, height: 48,
+        marginTop: layout.statusBarHeight + 10,
+        overflow: 'hidden',
     },
-    searchInput: { flex: 1, fontSize: 15, marginLeft: 10 },
-    list: { paddingHorizontal: 16, paddingBottom: 24 },
-    countLabel: { fontSize: 13, marginBottom: 10 },
+    searchInput: { flex: 1, fontSize: 15, marginLeft: 10, fontWeight: '600' },
+    list: { paddingHorizontal: 16, paddingBottom: layout.tabBarHeight + 20 },
+    countLabel: { fontSize: 12, fontWeight: '800', marginBottom: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
     card: {
         flexDirection: 'row', alignItems: 'center',
-        borderRadius: 14, borderWidth: 1,
-        padding: 14, marginBottom: 12,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+        borderRadius: 22, borderWidth: 1,
+        padding: 16, marginBottom: 14, overflow: 'hidden',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 }, android: { elevation: 3 } }),
     },
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5 },
     avatar: {
-        width: 48, height: 48, borderRadius: 24,
+        width: 54, height: 54, borderRadius: 18,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 14,
+        marginRight: 16,
     },
-    avatarText: { fontSize: 20, fontWeight: '700' },
+    avatarText: { fontSize: 22, fontWeight: '800' },
     cardBody: { flex: 1 },
-    doctorName: { fontSize: 16, fontWeight: '600', marginBottom: 3 },
-    row: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-    meta: { fontSize: 13, fontWeight: '500' },
-    qual: { fontSize: 12, marginBottom: 2 },
-    metaSmall: { fontSize: 12 },
+    doctorName: { fontSize: 17, fontWeight: '800', marginBottom: 4, letterSpacing: -0.4 },
+    row: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+    meta: { fontSize: 13, fontWeight: '600' },
+    qual: { fontSize: 12, fontWeight: '500', marginBottom: 6 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
     badge: {
         flexDirection: 'row', alignItems: 'center',
-        alignSelf: 'flex-start', borderWidth: 1,
-        borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3,
-        marginTop: 6, gap: 5,
+        borderWidth: 1.5,
+        borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3,
+        gap: 5,
     },
-    dot: { width: 6, height: 6, borderRadius: 3 },
+    badgeTxt: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+    dot: { width: 7, height: 7, borderRadius: 4 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60, gap: 12 },
-    loadingText: { fontSize: 14, marginTop: 10 },
-    errorText: { fontSize: 15, textAlign: 'center', paddingHorizontal: 30, lineHeight: 22 },
-    retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
-    retryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+    loadingText: { fontSize: 14, marginTop: 10, fontWeight: '600' },
+    errorText: { fontSize: 15, textAlign: 'center', paddingHorizontal: 30, lineHeight: 22, fontWeight: '500' },
+    retryBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 10 },
+    retryText: { color: '#fff', fontWeight: '800', fontSize: 14, textTransform: 'uppercase' },
     scheduleHint: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        marginTop: 6,
+        flexDirection: 'row', alignItems: 'center', gap: 5,
     },
-    scheduleHintText: { fontSize: 11, fontWeight: '600' },
-    emptyText: { fontSize: 16, marginTop: 10 },
+    scheduleHintText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.3 },
+    emptyText: { fontSize: 16, marginTop: 10, fontWeight: '500' },
 });
 
 export default DoctorsScreen;

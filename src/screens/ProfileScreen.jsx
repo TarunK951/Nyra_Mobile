@@ -1,130 +1,200 @@
-import React from 'react';
+// ─── iOS 26 Liquid Glass — Profile Screen ────────────────────────
+import React, { useRef } from 'react';
 import {
-    StyleSheet, View, Text, TouchableOpacity,
-    ScrollView, Image, Platform, Dimensions
+    StyleSheet, View, Text, TouchableOpacity, ScrollView, Platform, Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
-import { LogOut, User, Mail, Shield, Settings, Moon, Sun, ChevronRight, Bell, CreditCard, Lock } from 'lucide-react-native';
+import { LogOut, User, Mail, Shield, Bell, Lock, ChevronRight, Moon, Sun } from 'lucide-react-native';
 import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GlassMenuRow = ({ icon: Icon, label, color, onPress, index, colors, anim }) => {
+    const g = colors.glass;
+    const { scale, pressIn, pressOut } = useScalePressAnim();
+    return (
+        <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }, { scale }] } : { transform: [{ scale }] }}>
+            <TouchableOpacity
+                onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}
+                activeOpacity={1}
+                style={[styles.menuRow, { borderTopWidth: index > 0 ? 1 : 0, borderTopColor: g.borderSubtle }]}
+            >
+                <View style={[styles.menuIcon, { backgroundColor: (color || colors.primary) + '10' }]}>
+                    <Icon size={18} color={color || colors.primary} strokeWidth={2.5} />
+                </View>
+                <Text style={[styles.menuLabel, { color: colors.foreground }]}>{label}</Text>
+                <ChevronRight size={14} color={colors.mutedForeground} strokeWidth={3} opacity={0.5} />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 const ProfileScreen = () => {
     const { user, logout } = useAuth();
     const { colors, themeMode, toggleTheme } = useTheme();
+    const g = colors.glass;
+
+    const staggerAnims = useStagger(8, 80);
+    const { scale: logoutScale, pressIn, pressOut } = useScalePressAnim();
+
+    const switchAnim = useRef(new Animated.Value(themeMode === 'dark' ? 1 : 0)).current;
+    const handleToggle = () => {
+        toggleTheme();
+        Animated.spring(switchAnim, {
+            toValue: themeMode === 'dark' ? 0 : 1,
+            tension: 200, friction: 14, useNativeDriver: true,
+        }).start();
+    };
+    const thumbX = switchAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 22] });
 
     const menuItems = [
-        { id: 'profile', label: 'Personal Information', icon: User, color: colors.primary },
-        { id: 'notif', label: 'Notifications', icon: Bell, color: '#f59e0b' },
-        { id: 'billing', label: 'Billing & Subscriptions', icon: CreditCard, color: '#10b981' },
-        { id: 'security', label: 'Security & Password', icon: Lock, color: '#ef4444' },
+        { icon: Mail, label: 'Email', value: user?.email || 'N/A', color: colors.primary },
+        { icon: Shield, label: 'Role', value: (user?.role || 'Staff').replace(/_/g, ' '), color: '#6366f1' },
+        { icon: Bell, label: 'Notifications', color: '#f59e0b' },
+        { icon: Lock, label: 'Security', color: '#ef4444' },
     ];
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background, paddingTop: layout.statusBarHeight }]}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Header / Avatar */}
-                <View style={styles.header}>
-                    <View style={[styles.avatarBox, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}>
-                        <User size={42} color={colors.primary} strokeWidth={1.5} />
-                        <TouchableOpacity style={[styles.editBadge, { backgroundColor: colors.primary }]}>
-                            <Settings size={12} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-                    <Text style={[styles.userName, { color: colors.foreground }]}>{user?.name || 'Practitioner'}</Text>
-                    <Text style={[styles.userRole, { color: colors.mutedForeground }]}>{user?.role?.replace(/_/g, ' ') || 'Healthcare Staff'}</Text>
-                </View>
-
-                {/* Info Card */}
-                <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <View style={styles.infoRow}>
-                        <Mail size={18} color={colors.mutedForeground} />
-                        <View style={styles.infoText}>
-                            <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Email Address</Text>
-                            <Text style={[styles.infoValue, { color: colors.foreground }]}>{user?.email || 'N/A'}</Text>
+        <View style={[styles.screen, { backgroundColor: colors.background }]}>
+            <ScrollView
+                contentContainerStyle={[styles.scroll, { paddingTop: layout.statusBarHeight + 20 }]}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Hero avatar */}
+                <Animated.View style={staggerAnims[0] ? { opacity: staggerAnims[0].opacity, transform: [{ translateY: staggerAnims[0].translateY }], alignItems: 'center', marginBottom: 32, gap: 14 } : { alignItems: 'center', marginBottom: 32, gap: 14 }}>
+                    <BlurView
+                        intensity={g.blurStrong}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.avatarWrap, { borderColor: g.border }]}
+                    >
+                        <View style={styles.avatarGlow} />
+                        <View style={[styles.avatarInner, { backgroundColor: colors.primary + '15' }]}>
+                            <User size={48} color={colors.primary} strokeWidth={2.5} />
+                        </View>
+                    </BlurView>
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={[styles.name, { color: colors.foreground }]}>{user?.name || 'Practitioner Name'}</Text>
+                        <View style={[styles.rolePill, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30', borderWidth: 1 }]}>
+                            <Text style={[styles.roleText, { color: colors.primary }]}>
+                                {(user?.role || 'Healthcare Professional').replace(/_/g, ' ')}
+                            </Text>
                         </View>
                     </View>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                    <View style={styles.infoRow}>
-                        <Shield size={18} color={colors.mutedForeground} />
-                        <View style={styles.infoText}>
-                            <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Hospital ID</Text>
-                            <Text style={[styles.infoValue, { color: colors.foreground }]}>{user?.hospitalId || 'N/A'}</Text>
-                        </View>
-                    </View>
-                </View>
+                </Animated.View>
 
-                {/* Settings Section */}
-                <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>Account Settings</Text>
-                <View style={[styles.menuWrapper, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    {menuItems.map((item, idx) => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={[styles.menuRow, idx !== menuItems.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-                        >
-                            <View style={[styles.menuIcon, { backgroundColor: item.color + '15' }]}>
-                                <item.icon size={18} color={item.color} />
+                {/* Account info card */}
+                <Animated.View style={staggerAnims[1] ? { opacity: staggerAnims[1].opacity, transform: [{ translateY: staggerAnims[1].translateY }] } : {}}>
+                    <BlurView
+                        intensity={g.blur}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.glassCard, { borderColor: g.border }]}
+                    >
+                        <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
+                        {menuItems.map((m, i) => (
+                            <GlassMenuRow
+                                key={m.label} {...m} index={i}
+                                colors={colors} anim={staggerAnims[i + 2]}
+                            />
+                        ))}
+                    </BlurView>
+                </Animated.View>
+
+                {/* Theme toggle */}
+                <Animated.View style={staggerAnims[6] ? { opacity: staggerAnims[6].opacity, transform: [{ translateY: staggerAnims[6].translateY }] } : {}}>
+                    <BlurView
+                        intensity={g.blur}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.themeCard, { borderColor: g.border }]}
+                    >
+                        <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
+                        <View style={styles.themeRow}>
+                            <View style={[styles.themeIcon, { backgroundColor: themeMode === 'dark' ? '#5c67f220' : '#f59e0b20' }]}>
+                                {themeMode === 'dark'
+                                    ? <Moon size={18} color="#818cf8" strokeWidth={2.5} />
+                                    : <Sun size={18} color="#f59e0b" strokeWidth={2.5} />
+                                }
                             </View>
-                            <Text style={[styles.menuLabel, { color: colors.foreground }]}>{item.label}</Text>
-                            <ChevronRight size={16} color={colors.mutedForeground} opacity={0.6} />
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                {/* Theme Toggle */}
-                <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <View style={styles.themeLeft}>
-                        {themeMode === 'dark' ? <Moon size={20} color={colors.primary} /> : <Sun size={20} color="#f59e0b" />}
-                        <Text style={[styles.themeLabel, { color: colors.foreground }]}>Dark Appearance</Text>
-                    </View>
-                    <TouchableOpacity onPress={toggleTheme} style={[styles.switch, { backgroundColor: themeMode === 'dark' ? colors.primary : colors.muted }]}>
-                        <View style={[styles.switchThumb, { transform: [{ translateX: themeMode === 'dark' ? 20 : 2 }] }]} />
-                    </TouchableOpacity>
-                </View>
+                            <Text style={[styles.themeLabel, { color: colors.foreground }]}>
+                                {themeMode === 'dark' ? 'MIDNIGHT THEME' : 'DAYLIGHT THEME'}
+                            </Text>
+                            <TouchableOpacity onPress={handleToggle} activeOpacity={0.9}>
+                                <View style={[styles.switchTrack, { backgroundColor: themeMode === 'dark' ? colors.primary : colors.muted }]}>
+                                    <Animated.View style={[styles.switchThumb, { transform: [{ translateX: thumbX }] }]} />
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    </BlurView>
+                </Animated.View>
 
                 {/* Logout */}
-                <TouchableOpacity
-                    style={[styles.logoutBtn, { borderColor: colors.destructive + '40' }]}
-                    onPress={logout}
-                >
-                    <LogOut size={20} color={colors.destructive} />
-                    <Text style={[styles.logoutText, { color: colors.destructive }]}>Sign Out</Text>
-                </TouchableOpacity>
+                <Animated.View style={staggerAnims[7] ? { opacity: staggerAnims[7].opacity, transform: [{ translateY: staggerAnims[7].translateY }, { scale: logoutScale }], marginTop: 8 } : { transform: [{ scale: logoutScale }], marginTop: 8 }}>
+                    <TouchableOpacity
+                        onPress={logout} onPressIn={pressIn} onPressOut={pressOut}
+                        activeOpacity={1}
+                    >
+                        <BlurView
+                            intensity={g.blur}
+                            tint={g.tint}
+                            experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                            style={[styles.logoutCard, { borderColor: colors.error + '40' }]}
+                        >
+                            <LogOut size={20} color={colors.error} strokeWidth={2.5} />
+                            <Text style={[styles.logoutText, { color: colors.error }]}>Log Out of Session</Text>
+                        </BlurView>
+                    </TouchableOpacity>
+                </Animated.View>
 
-                <Text style={[styles.version, { color: colors.mutedForeground }]}>NyraAI Mobile v1.0.4 (Stable)</Text>
+                <Text style={[styles.version, { color: colors.mutedForeground }]}>
+                    NyraAI Mobile v1.0.4
+                </Text>
+                <View style={{ height: layout.tabBarHeight + 20 }} />
             </ScrollView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    scrollContent: { padding: 20, paddingBottom: 40 },
-    header: { alignItems: 'center', marginVertical: 30 },
-    avatarBox: { width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center', borderWidth: 2, position: 'relative' },
-    editBadge: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
-    userName: { fontSize: 24, fontWeight: '800', marginTop: 15, letterSpacing: -0.5 },
-    userRole: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 4 },
-    infoCard: { borderRadius: 24, borderWidth: 1, padding: 10, marginTop: 10 },
-    infoRow: { flexDirection: 'row', alignItems: 'center', padding: 14 },
-    infoText: { marginLeft: 15, gap: 2 },
-    infoLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
-    infoValue: { fontSize: 15, fontWeight: '600' },
-    divider: { height: 1, marginHorizontal: 15 },
-    sectionTitle: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginTop: 30, marginBottom: 12, marginLeft: 6 },
-    menuWrapper: { borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
-    menuRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-    menuIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
-    menuLabel: { flex: 1, fontSize: 15, fontWeight: '600' },
-    themeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18, borderRadius: 24, borderWidth: 1, marginTop: 20 },
-    themeLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    themeLabel: { fontSize: 15, fontWeight: '600' },
-    switch: { width: 44, height: 24, borderRadius: 12, justifyContent: 'center' },
-    switchThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
-    logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, borderRadius: 20, borderWidth: 1.5, marginTop: 40 },
-    logoutText: { fontSize: 16, fontWeight: '700' },
-    version: { textAlign: 'center', fontSize: 12, marginTop: 20, opacity: 0.6 },
+    screen: { flex: 1 },
+    scroll: { paddingHorizontal: 20 },
+    avatarWrap: {
+        width: 100, height: 100, borderRadius: 36, overflow: 'hidden', borderWidth: 1.5,
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24 }, android: { elevation: 12 } }),
+    },
+    avatarGlow: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.1)', top: -30, left: -30 },
+    avatarInner: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    name: { fontSize: 28, fontWeight: '900', letterSpacing: -1, textAlign: 'center' },
+    rolePill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginTop: 8 },
+    roleText: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+    glassCard: {
+        borderRadius: 28, borderWidth: 1, overflow: 'hidden', marginBottom: 14,
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 20 }, android: { elevation: 6 } }),
+    },
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
+    menuRow: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
+    menuIcon: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    menuLabel: { flex: 1, fontSize: 16, fontWeight: '800', opacity: 0.8 },
+
+    themeCard: { borderRadius: 24, borderWidth: 1, overflow: 'hidden', marginBottom: 14 },
+    themeRow: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
+    themeIcon: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    themeLabel: { flex: 1, fontSize: 13, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.6 },
+    switchTrack: { width: 50, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3 },
+    switchThumb: {
+        width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6 }, android: { elevation: 4 } }),
+    },
+
+    logoutCard: {
+        borderRadius: 24, borderWidth: 1.5, overflow: 'hidden',
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 18,
+    },
+    logoutText: { fontSize: 16, fontWeight: '900', letterSpacing: -0.2 },
+    version: { textAlign: 'center', fontSize: 12, fontWeight: '700', marginTop: 24, opacity: 0.3, letterSpacing: 1 },
 });
 
 export default ProfileScreen;

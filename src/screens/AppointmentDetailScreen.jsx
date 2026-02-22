@@ -1,41 +1,50 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet, View, Text, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Platform, Alert, Modal, TextInput,
+    ActivityIndicator, RefreshControl, Platform, Alert, Modal, TextInput, Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { appointmentApi } from '../api/appointments';
 import {
     ChevronLeft, Calendar, Clock, User, Stethoscope,
-    CheckCircle, XCircle, AlertCircle, Circle, Edit2,
-    Phone, MessageSquare, ChevronRight,
+    CheckCircle, XCircle, AlertCircle, Circle,
+    Phone, MessageSquare,
 } from 'lucide-react-native';
 import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
 const STATUS_CONFIG = {
-    CONFIRMED: { label: 'Confirmed', color: '#10b981', icon: CheckCircle },
-    COMPLETED: { label: 'Completed', color: '#3b82f6', icon: CheckCircle },
-    CANCELLED: { label: 'Cancelled', color: '#ef4444', icon: XCircle },
-    PENDING: { label: 'Pending', color: '#f59e0b', icon: AlertCircle },
-    SCHEDULED: { label: 'Scheduled', color: '#8b5cf6', icon: Circle },
-    NO_SHOW: { label: 'No Show', color: '#6b7280', icon: XCircle },
+    CONFIRMED: { label: 'Confirmed', color: '#10b981', icon: CheckCircle, bg: 'rgba(16, 185, 129, 0.12)' },
+    COMPLETED: { label: 'Completed', color: '#2563eb', icon: CheckCircle, bg: 'rgba(37, 99, 235, 0.12)' },
+    CANCELLED: { label: 'Cancelled', color: '#ef4444', icon: XCircle, bg: 'rgba(239, 68, 68, 0.12)' },
+    PENDING: { label: 'Pending', color: '#f59e0b', icon: AlertCircle, bg: 'rgba(245, 158, 11, 0.12)' },
+    SCHEDULED: { label: 'Scheduled', color: '#8b5cf6', icon: Circle, bg: 'rgba(139, 92, 246, 0.12)' },
+    NO_SHOW: { label: 'No Show', color: '#6b7280', icon: XCircle, bg: 'rgba(107, 114, 128, 0.12)' },
 };
 
 const StatusBadge = ({ status, colors }) => {
-    const cfg = STATUS_CONFIG[status] || { label: status || '—', color: colors.mutedForeground };
+    const cfg = STATUS_CONFIG[status] || { label: status || '—', color: colors.mutedForeground, bg: 'rgba(0,0,0,0.05)' };
     const Icon = cfg.icon || Circle;
     return (
-        <View style={[styles.badge, { backgroundColor: cfg.color + '18', borderColor: cfg.color + '40' }]}>
-            <Icon size={12} color={cfg.color} />
+        <BlurView
+            intensity={colors.glass.blurStrong}
+            tint={colors.glass.tint}
+            experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+            style={[styles.badge, { backgroundColor: cfg.bg, borderColor: cfg.color + '40' }]}
+        >
+            <Icon size={12} color={cfg.color} strokeWidth={2.5} />
             <Text style={[styles.badgeTxt, { color: cfg.color }]}>{cfg.label}</Text>
-        </View>
+        </BlurView>
     );
 };
 
 const InfoRow = ({ icon: Icon, label, value, colors }) =>
     value ? (
         <View style={styles.infoRow}>
-            <Icon size={15} color={colors.mutedForeground} />
+            <View style={[styles.infoIcon, { backgroundColor: colors.muted }]}>
+                <Icon size={14} color={colors.primary} strokeWidth={2.5} />
+            </View>
             <View style={styles.infoText}>
                 <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</Text>
                 <Text style={[styles.infoValue, { color: colors.foreground }]}>{value}</Text>
@@ -125,18 +134,29 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     const canConfirm = ['PENDING', 'SCHEDULED'].includes(apt.status);
     const canCancel = !['CANCELLED', 'COMPLETED'].includes(apt.status);
 
+    const staggerAnims = useStagger(6, 80);
+    const g = colors.glass;
+    const { scale: confirmScale, pressIn: confirmIn, pressOut: confirmOut } = useScalePressAnim();
+    const { scale: cancelScale, pressIn: cancelIn, pressOut: cancelOut } = useScalePressAnim();
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.cardBorder }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <ChevronLeft size={22} color={colors.primary} />
+            {/* Glass Header */}
+            <BlurView
+                intensity={g.blurStrong}
+                tint={g.tint}
+                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                style={[styles.header, { borderBottomColor: g.borderSubtle }]}
+            >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.muted }]}>
+                    <ChevronLeft size={22} color={colors.foreground} strokeWidth={2.5} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={[styles.headerTitle, { color: colors.foreground }]}>Appointment Detail</Text>
+                    <Text style={[styles.headerTitle, { color: colors.foreground }]}>Appointment</Text>
+                    <Text style={[styles.headerSub, { color: colors.primary }]}>{apt?.uhid ? `UHID: ${apt.uhid}` : 'Details'}</Text>
                 </View>
                 <StatusBadge status={apt.status} colors={colors} />
-            </View>
+            </BlurView>
 
             <ScrollView
                 contentContainerStyle={styles.scroll}
@@ -144,62 +164,99 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Hero date card */}
-                <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-                    <Calendar size={32} color="#fff" />
-                    <Text style={styles.heroDate}>{dateStr}</Text>
-                    <Text style={styles.heroTime}>{timeStr}</Text>
-                </View>
+                <Animated.View style={staggerAnims[0] ? { opacity: staggerAnims[0].opacity, transform: [{ translateY: staggerAnims[0].translateY }] } : {}}>
+                    <BlurView
+                        intensity={g.blurStrong}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.heroCard, { backgroundColor: colors.primary, borderColor: g.border }]}
+                    >
+                        <View style={[styles.cardShimmer, { backgroundColor: 'rgba(255,255,255,0.25)' }]} />
+                        <View style={styles.heroGlow} />
+                        <View style={[styles.heroIconBox, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+                            <Calendar size={32} color="#fff" strokeWidth={2.5} />
+                        </View>
+                        <Text style={styles.heroDate}>{dateStr}</Text>
+                        <Text style={styles.heroTime}>{timeStr}</Text>
+                    </BlurView>
+                </Animated.View>
 
                 {/* Appointment info */}
-                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>Appointment Info</Text>
-                    <InfoRow icon={User} label="Patient" value={apt.patient?.name || apt.patientName} colors={colors} />
-                    <InfoRow icon={Stethoscope} label="Doctor" value={apt.doctor?.name || apt.doctorName} colors={colors} />
-                    <InfoRow icon={Calendar} label="Date" value={dateStr} colors={colors} />
-                    <InfoRow icon={Clock} label="Time" value={timeStr} colors={colors} />
-                    <InfoRow icon={MessageSquare} label="Reason" value={apt.reason || apt.notes} colors={colors} />
-                    {apt.appointment_number && (
-                        <InfoRow icon={AlertCircle} label="Appt #" value={apt.appointment_number} colors={colors} />
-                    )}
-                </View>
+                <Animated.View style={staggerAnims[1] ? { opacity: staggerAnims[1].opacity, transform: [{ translateY: staggerAnims[1].translateY }] } : {}}>
+                    <BlurView
+                        intensity={g.blur}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={[styles.card, { borderColor: g.border }]}
+                    >
+                        <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
+                        <Text style={[styles.cardTitle, { color: colors.primary }]}>APPOINTMENT INFO</Text>
+                        <InfoRow icon={User} label="Patient" value={apt.patient?.name || apt.patientName} colors={colors} />
+                        <InfoRow icon={Stethoscope} label="Doctor" value={apt.doctor?.name || apt.doctorName} colors={colors} />
+                        <InfoRow icon={Calendar} label="Date" value={dateStr} colors={colors} />
+                        <InfoRow icon={Clock} label="Time" value={timeStr} colors={colors} />
+                        <InfoRow icon={MessageSquare} label="Reason" value={apt.reason || apt.notes} colors={colors} />
+                        {apt.appointment_number && (
+                            <InfoRow icon={AlertCircle} label="Appt #" value={apt.appointment_number} colors={colors} />
+                        )}
+                    </BlurView>
+                </Animated.View>
 
                 {/* Patient contact */}
                 {(apt.patient?.phone || apt.patientPhone) && (
-                    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                        <Text style={[styles.cardTitle, { color: colors.foreground }]}>Patient Contact</Text>
-                        <InfoRow icon={Phone} label="Phone" value={apt.patient?.phone || apt.patientPhone} colors={colors} />
-                        {apt.patient?.email && (
-                            <InfoRow icon={MessageSquare} label="Email" value={apt.patient.email} colors={colors} />
-                        )}
-                    </View>
+                    <Animated.View style={staggerAnims[2] ? { opacity: staggerAnims[2].opacity, transform: [{ translateY: staggerAnims[2].translateY }] } : {}}>
+                        <BlurView
+                            intensity={g.blur}
+                            tint={g.tint}
+                            experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                            style={[styles.card, { borderColor: g.border }]}
+                        >
+                            <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
+                            <Text style={[styles.cardTitle, { color: colors.primary }]}>PATIENT CONTACT</Text>
+                            <InfoRow icon={Phone} label="Phone" value={apt.patient?.phone || apt.patientPhone} colors={colors} />
+                            {apt.patient?.email && (
+                                <InfoRow icon={MessageSquare} label="Email" value={apt.patient.email} colors={colors} />
+                            )}
+                        </BlurView>
+                    </Animated.View>
                 )}
 
                 {/* Actions */}
                 {(canConfirm || canCancel) && (
-                    <View style={styles.actionsRow}>
-                        {canConfirm && (
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: '#10b981' }]}
-                                onPress={handleConfirm}
-                                disabled={!!actionLoading}
-                            >
-                                {actionLoading === 'confirm'
-                                    ? <ActivityIndicator size="small" color="#fff" />
-                                    : <CheckCircle size={16} color="#fff" />}
-                                <Text style={styles.actionTxt}>Confirm</Text>
-                            </TouchableOpacity>
-                        )}
-                        {canCancel && (
-                            <TouchableOpacity
-                                style={[styles.actionBtn, { backgroundColor: '#ef4444' }]}
-                                onPress={() => setCancelModal(true)}
-                                disabled={!!actionLoading}
-                            >
-                                <XCircle size={16} color="#fff" />
-                                <Text style={styles.actionTxt}>Cancel</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
+                    <Animated.View style={staggerAnims[3] ? { opacity: staggerAnims[3].opacity, transform: [{ translateY: staggerAnims[3].translateY }] } : {}}>
+                        <View style={styles.actionsRow}>
+                            {canConfirm && (
+                                <Animated.View style={{ flex: 1, transform: [{ scale: confirmScale }] }}>
+                                    <TouchableOpacity
+                                        activeOpacity={1}
+                                        onPressIn={confirmIn} onPressOut={confirmOut}
+                                        style={[styles.actionBtn, { backgroundColor: colors.success }]}
+                                        onPress={handleConfirm}
+                                        disabled={!!actionLoading}
+                                    >
+                                        {actionLoading === 'confirm'
+                                            ? <ActivityIndicator size="small" color="#fff" />
+                                            : <CheckCircle size={18} color="#fff" strokeWidth={2.5} />}
+                                        <Text style={styles.actionTxt}>Confirm</Text>
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            )}
+                            {canCancel && (
+                                <Animated.View style={{ flex: 1, transform: [{ scale: cancelScale }] }}>
+                                    <TouchableOpacity
+                                        activeOpacity={1}
+                                        onPressIn={cancelIn} onPressOut={cancelOut}
+                                        style={[styles.actionBtn, { backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.error + '40' }]}
+                                        onPress={() => setCancelModal(true)}
+                                        disabled={!!actionLoading}
+                                    >
+                                        <XCircle size={18} color={colors.error} strokeWidth={2.5} />
+                                        <Text style={[styles.actionTxt, { color: colors.error }]}>Cancel</Text>
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            )}
+                        </View>
+                    </Animated.View>
                 )}
 
                 <View style={{ height: 40 }} />
@@ -208,13 +265,17 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
             {/* Cancel Modal */}
             <Modal visible={cancelModal} transparent animationType="fade">
                 <View style={styles.overlay}>
-                    <View style={[styles.modal, { backgroundColor: colors.card }]}>
+                    <BlurView
+                        intensity={g.blurStrong} tint={g.tint}
+                        style={[styles.modal, { borderColor: g.border }]}
+                    >
+                        <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
                         <Text style={[styles.modalTitle, { color: colors.foreground }]}>Cancel Appointment</Text>
                         <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
                             Please provide a reason for cancellation (optional)
                         </Text>
                         <TextInput
-                            style={[styles.modalInput, { color: colors.foreground, borderColor: colors.cardBorder, backgroundColor: colors.background }]}
+                            style={[styles.modalInput, { color: colors.foreground, borderColor: g.borderSubtle, backgroundColor: 'rgba(255,255,255,0.05)' }]}
                             placeholder="Reason..."
                             placeholderTextColor={colors.mutedForeground}
                             value={cancelReason}
@@ -224,15 +285,15 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                         />
                         <View style={styles.modalActions}>
                             <TouchableOpacity onPress={() => setCancelModal(false)} style={[styles.modalBtn, { backgroundColor: colors.muted }]}>
-                                <Text style={{ color: colors.foreground, fontWeight: '600' }}>Back</Text>
+                                <Text style={{ color: colors.foreground, fontWeight: '800' }}>BACK</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={handleCancel} style={[styles.modalBtn, { backgroundColor: '#ef4444' }]} disabled={actionLoading === 'cancel'}>
+                            <TouchableOpacity onPress={handleCancel} style={[styles.modalBtn, { backgroundColor: colors.error }]} disabled={actionLoading === 'cancel'}>
                                 {actionLoading === 'cancel'
                                     ? <ActivityIndicator size="small" color="#fff" />
-                                    : <Text style={{ color: '#fff', fontWeight: '600' }}>Cancel Appointment</Text>}
+                                    : <Text style={{ color: '#fff', fontWeight: '800' }}>CANCEL NOW</Text>}
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </BlurView>
                 </View>
             </Modal>
         </View>
@@ -244,51 +305,60 @@ const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: {
         flexDirection: 'row', alignItems: 'center',
-        paddingTop: layout.statusBarHeight,
-        paddingBottom: 14, paddingHorizontal: 16,
-        borderBottomWidth: 1, gap: 10,
+        paddingTop: layout.statusBarHeight + 4, paddingBottom: 14, paddingHorizontal: 16,
+        borderBottomWidth: 1, gap: 12, overflow: 'hidden',
     },
-    backBtn: { padding: 4 },
+    backBtn: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
     headerCenter: { flex: 1 },
-    headerTitle: { fontSize: 17, fontWeight: '700' },
+    headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
+    headerSub: { fontSize: 13, fontWeight: '700', marginTop: 1 },
+
     badge: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        borderWidth: 1, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3,
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, overflow: 'hidden',
     },
-    badgeTxt: { fontSize: 11, fontWeight: '700' },
-    scroll: { padding: 16, gap: 14 },
+    badgeTxt: { fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+    scroll: { padding: 20, gap: 18 },
+
     heroCard: {
-        borderRadius: 16, padding: 24,
-        alignItems: 'center', gap: 8,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15, shadowRadius: 10, elevation: 5,
+        borderRadius: 30, padding: 30,
+        alignItems: 'center', gap: 12,
+        borderWidth: 1, overflow: 'hidden',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 24 }, android: { elevation: 8 } }),
     },
-    heroDate: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center' },
-    heroTime: { color: 'rgba(255,255,255,0.8)', fontSize: 24, fontWeight: '800' },
+    heroGlow: { position: 'absolute', top: -100, left: -100, width: 300, height: 300, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 150 },
+    heroIconBox: { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+    heroDate: { color: '#fff', fontSize: 20, fontWeight: '800', textAlign: 'center', letterSpacing: -0.2, opacity: 0.9 },
+    heroTime: { color: '#fff', fontSize: 34, fontWeight: '900', letterSpacing: -1 },
+
     card: {
-        borderRadius: 16, borderWidth: 1, padding: 16,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+        borderRadius: 26, borderWidth: 1, padding: 20, overflow: 'hidden',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 16 }, android: { elevation: 4 } })
     },
-    cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
-    infoRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12, gap: 10 },
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
+    cardTitle: { fontSize: 12, fontWeight: '900', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 },
+
+    infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 12 },
+    infoIcon: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
     infoText: { flex: 1 },
-    infoLabel: { fontSize: 12, marginBottom: 2 },
-    infoValue: { fontSize: 15, fontWeight: '500' },
-    actionsRow: { flexDirection: 'row', gap: 12 },
+    infoLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, opacity: 0.6 },
+    infoValue: { fontSize: 15, fontWeight: '700', marginTop: 1 },
+
+    actionsRow: { flexDirection: 'row', gap: 14 },
     actionBtn: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 8, paddingVertical: 13, borderRadius: 12,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 10, paddingVertical: 14, borderRadius: 16,
     },
-    actionTxt: { color: '#fff', fontSize: 15, fontWeight: '700' },
+    actionTxt: { color: '#fff', fontSize: 15, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+
     // Modal
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
-    modal: { borderRadius: 20, padding: 24, gap: 12 },
-    modalTitle: { fontSize: 18, fontWeight: '700' },
-    modalSub: { fontSize: 14, lineHeight: 20 },
-    modalInput: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 14, minHeight: 80, textAlignVertical: 'top' },
-    modalActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
-    modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 },
+    modal: { borderRadius: 30, padding: 26, gap: 16, borderWidth: 1, overflow: 'hidden' },
+    modalTitle: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
+    modalSub: { fontSize: 15, fontWeight: '600', opacity: 0.7, lineHeight: 22 },
+    modalInput: { borderWidth: 1, borderRadius: 16, padding: 16, fontSize: 15, fontWeight: '500', minHeight: 100, textAlignVertical: 'top' },
+    modalActions: { flexDirection: 'row', gap: 12, marginTop: 6 },
+    modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default AppointmentDetailScreen;

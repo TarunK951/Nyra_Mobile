@@ -1,41 +1,104 @@
+// ─── Patient List — iOS 26 Liquid Glass ──────────────────────────
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet, View, Text, FlatList, ActivityIndicator,
-    TouchableOpacity, RefreshControl, TextInput, Platform, Dimensions
+    TouchableOpacity, RefreshControl, TextInput, Platform, Animated,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { patientApi } from '../api/patients';
-import { Search, User, Phone, ChevronRight, Filter, Plus, AlertCircle } from 'lucide-react-native';
+import { Search, Plus, AlertCircle, Users, ChevronRight, Phone } from 'lucide-react-native';
 import { layout } from '../utils/layout';
+import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// ─── Patient Card ────────────────────────────────────────────────
+const PatientCard = ({ item, onPress, colors, anim }) => {
+    const g = colors.glass;
+    const { scale, pressIn, pressOut } = useScalePressAnim();
+
+    return (
+        <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }, { scale }] } : { transform: [{ scale }] }}>
+            <TouchableOpacity
+                onPress={onPress}
+                onPressIn={pressIn}
+                onPressOut={pressOut}
+                activeOpacity={1}
+            >
+                <BlurView
+                    intensity={g.blur}
+                    tint={g.tint}
+                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                    style={[styles.card, { borderColor: g.border }]}
+                >
+                    <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
+                    <View style={[styles.avatar, { backgroundColor: colors.primary + '10' }]}>
+                        <Text style={[styles.avatarText, { color: colors.primary }]}>
+                            {(item.name || 'P').charAt(0).toUpperCase()}
+                        </Text>
+                    </View>
+                    <View style={styles.cardInfo}>
+                        <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>
+                            {item.name || 'Anonymous Person'}
+                        </Text>
+                        <View style={styles.metaRow}>
+                            <View style={[styles.metaPill, { backgroundColor: colors.primary + '08' }]}>
+                                <Phone size={11} color={colors.primary} strokeWidth={3} />
+                                <Text style={[styles.meta, { color: colors.primary }]}>
+                                    {item.phone || 'No phone'}
+                                </Text>
+                            </View>
+                            <View style={[styles.metaPill, { backgroundColor: colors.mutedForeground + '08' }]}>
+                                <Text style={[styles.meta, { color: colors.foreground, opacity: 0.6 }]}>
+                                    {item.gender || 'N/A'}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                    <ChevronRight size={14} color={colors.mutedForeground} strokeWidth={3} opacity={0.3} />
+                </BlurView>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 const PatientListScreen = ({ navigation }) => {
     const { colors } = useTheme();
+    const g = colors.glass;
+
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [search, setSearch] = useState('');
+    const [searchFocus, setSearchFocus] = useState(false);
     const [error, setError] = useState(null);
     const [total, setTotal] = useState(0);
 
-    const fetchPatients = useCallback(async (query = '') => {
+    const searchBorderAnim = React.useRef(new Animated.Value(0)).current;
+
+    const onSearchFocus = () => {
+        setSearchFocus(true);
+        Animated.spring(searchBorderAnim, { toValue: 1, ...SPRING.snappy }).start();
+    };
+    const onSearchBlur = () => {
+        setSearchFocus(false);
+        Animated.spring(searchBorderAnim, { toValue: 0, ...SPRING.gentle }).start();
+    };
+
+    const searchBorder = searchBorderAnim.interpolate({
+        inputRange: [0, 1], outputRange: [g.border, colors.primary],
+    });
+
+    const fetchPatients = useCallback(async (q = '') => {
         try {
             setError(null);
-            const params = query ? { search: query } : {};
-            const response = await patientApi.getAll(params);
-
-            if (response && response.data) {
-                const data = response.data;
-                const raw = data?.patients || data?.data || (Array.isArray(data) ? data : []);
-                const list = Array.isArray(raw) ? raw : [];
-                setPatients(list);
-                setTotal(data?.total || data?.meta?.total || list.length);
-            } else {
-                setError("No response from server.");
+            const res = await patientApi.getAll(q ? { search: q } : {});
+            if (res?.data) {
+                const d = res.data;
+                const raw = d?.patients || d?.data || (Array.isArray(d) ? d : []);
+                setPatients(Array.isArray(raw) ? raw : []);
+                setTotal(d?.total || d?.meta?.total || (Array.isArray(raw) ? raw.length : 0));
             }
         } catch (e) {
-            console.error('[PatientList]', e.message);
             setError(e?.response?.data?.message || 'Failed to load patients.');
         } finally {
             setLoading(false);
@@ -44,110 +107,91 @@ const PatientListScreen = ({ navigation }) => {
     }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => fetchPatients(search), 500);
-        return () => clearTimeout(timer);
+        const t = setTimeout(() => fetchPatients(search), 450);
+        return () => clearTimeout(t);
     }, [search, fetchPatients]);
 
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchPatients(search);
-    };
-
-    const renderPatient = ({ item }) => (
-        <TouchableOpacity
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-            onPress={() => navigation.navigate('PatientDetail', { patientId: item.id, patient: item })}
-            activeOpacity={0.7}
-        >
-            <View style={[styles.avatar, { backgroundColor: colors.primary + '15' }]}>
-                <Text style={[styles.avatarText, { color: colors.primary }]}>
-                    {(item.name || 'P').charAt(0).toUpperCase()}
-                </Text>
-            </View>
-            <View style={styles.cardInfo}>
-                <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>
-                    {item.name || 'Unknown Patient'}
-                </Text>
-                <View style={styles.metaRow}>
-                    <Phone size={12} color={colors.mutedForeground} />
-                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                        {item.phone || 'No phone'}
-                    </Text>
-                    <View style={[styles.dot, { backgroundColor: colors.mutedForeground }]} />
-                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                        {item.gender || 'N/A'}
-                    </Text>
-                </View>
-            </View>
-            <ChevronRight size={18} color={colors.mutedForeground} opacity={0.5} />
-        </TouchableOpacity>
-    );
+    const onRefresh = () => { setRefreshing(true); fetchPatients(search); };
+    const staggerAnims = useStagger(8, 80);
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background, paddingTop: layout.statusBarHeight }]}>
+        <View style={[styles.screen, { backgroundColor: colors.background }]}>
             {/* Header */}
-            <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.foreground }]}>Patients</Text>
-                <TouchableOpacity
-                    style={[styles.addBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => {/* TODO: Add Patient */ }}
-                >
-                    <Plus size={20} color="#fff" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <View style={[styles.searchWrapper, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <Search size={18} color={colors.mutedForeground} />
-                    <TextInput
-                        style={[styles.searchInput, { color: colors.foreground }]}
-                        placeholder="Search by name or phone..."
-                        placeholderTextColor={colors.mutedForeground}
-                        value={search}
-                        onChangeText={setSearch}
-                    />
+            <View style={[styles.header, { paddingTop: layout.statusBarHeight + 10 }]}>
+                <View>
+                    <Text style={[styles.title, { color: colors.foreground }]}>Patients</Text>
+                    <Text style={[styles.count, { color: colors.mutedForeground }]}>
+                        {total > 0 ? `${total} Records Found` : 'No Records'}
+                    </Text>
                 </View>
-                <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    <Filter size={18} color={colors.mutedForeground} />
+                <TouchableOpacity activeOpacity={0.8} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
+                    <Plus size={24} color="#fff" strokeWidth={3} />
                 </TouchableOpacity>
             </View>
 
-            {/* List */}
+            {/* Glass Search Bar */}
+            <Animated.View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+                <Animated.View style={{ borderColor: searchBorder, borderWidth: 1.5, borderRadius: 22, overflow: 'hidden' }}>
+                    <BlurView
+                        intensity={g.blurStrong}
+                        tint={g.tint}
+                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        style={styles.searchBlur}
+                    >
+                        <Search size={18} color={searchFocus ? colors.primary : colors.mutedForeground} strokeWidth={2.5} />
+                        <TextInput
+                            style={[styles.searchInput, { color: colors.foreground }]}
+                            placeholder="Find patients by name or phone…"
+                            placeholderTextColor={colors.mutedForeground}
+                            value={search}
+                            onChangeText={setSearch}
+                            onFocus={onSearchFocus}
+                            onBlur={onSearchBlur}
+                        />
+                    </BlurView>
+                </Animated.View>
+            </Animated.View>
+
             {loading && !refreshing ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             ) : error ? (
                 <View style={styles.center}>
-                    <AlertCircle size={48} color="#ef4444" opacity={0.5} />
+                    <AlertCircle size={44} color={colors.error} opacity={0.5} />
                     <Text style={[styles.errorText, { color: colors.mutedForeground }]}>{error}</Text>
-                    <TouchableOpacity onPress={onRefresh} style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
+                    <TouchableOpacity
+                        onPress={onRefresh}
+                        style={[styles.retryBtn, { backgroundColor: colors.primary }]}
+                    >
                         <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
                     data={patients}
-                    keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-                    renderItem={renderPatient}
+                    keyExtractor={(i) => i.id?.toString() || i._id?.toString() || Math.random().toString()}
+                    renderItem={({ item, index }) => (
+                        <PatientCard
+                            item={item}
+                            anim={staggerAnims[Math.min(index, staggerAnims.length - 1)]}
+                            colors={colors}
+                            onPress={() => navigation.navigate('PatientDetail', { patientId: item.id || item._id, patient: item })}
+                        />
+                    )}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-                    }
-                    ListHeaderComponent={
-                        patients.length > 0 && (
-                            <Text style={[styles.countText, { color: colors.mutedForeground }]}>
-                                Showing {patients.length} {patients.length === 1 ? 'patient' : 'patients'}
-                            </Text>
-                        )
-                    }
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
                     ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <User size={64} color={colors.mutedForeground} opacity={0.2} />
-                            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                                {search ? 'No patients match your search' : 'No patients found'}
+                        <View style={styles.center}>
+                            <BlurView intensity={20} tint={g.tint} style={styles.emptyIconWrap}>
+                                <Users size={48} color={colors.primary} strokeWidth={1.5} />
+                            </BlurView>
+                            <Text style={[styles.emptyText, { color: colors.foreground }]}>
+                                {search ? 'Search Yielded No Results' : 'No Patient Database Found'}
+                            </Text>
+                            <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+                                {search ? 'Try refining your keywords or searching by phone number.' : 'Start adding patient records to build your clinic database.'}
                             </Text>
                         </View>
                     }
@@ -158,51 +202,38 @@ const PatientListScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    header: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingHorizontal: 20, paddingVertical: 16
+    screen: { flex: 1 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
+    title: { fontSize: 32, fontWeight: '900', letterSpacing: -0.8 },
+    count: { fontSize: 11, fontWeight: '900', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1, opacity: 0.5 },
+    addBtn: {
+        width: 50, height: 50, borderRadius: 18,
+        justifyContent: 'center', alignItems: 'center',
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 }, android: { elevation: 8 } }),
     },
-    title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
-    addBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-    searchContainer: {
-        flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 16
-    },
-    searchWrapper: {
-        flex: 1, flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 14, height: 48, borderRadius: 14, borderWidth: 1
-    },
-    searchInput: { flex: 1, marginLeft: 10, fontSize: 15, fontWeight: '500' },
-    filterBtn: {
-        width: 48, height: 48, borderRadius: 14, borderWidth: 1,
-        justifyContent: 'center', alignItems: 'center'
-    },
-    list: { paddingHorizontal: 20, paddingBottom: 30 },
-    countText: { fontSize: 13, fontWeight: '600', marginBottom: 12, marginLeft: 4 },
+    searchBlur: { flexDirection: 'row', alignItems: 'center', height: 56, paddingHorizontal: 16, gap: 12, borderRadius: 22 },
+    searchInput: { flex: 1, fontSize: 16, fontWeight: '800' },
+    list: { paddingHorizontal: 20, paddingBottom: layout.tabBarHeight + 40, gap: 12 },
     card: {
-        flexDirection: 'row', alignItems: 'center', padding: 14,
-        borderRadius: 20, borderWidth: 1, marginBottom: 12,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
-            android: { elevation: 2 }
-        })
+        flexDirection: 'row', alignItems: 'center',
+        padding: 16, borderRadius: 26, borderWidth: 1, overflow: 'hidden', gap: 16,
+        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 16 }, android: { elevation: 6 } }),
     },
-    avatar: {
-        width: 50, height: 50, borderRadius: 25,
-        justifyContent: 'center', alignItems: 'center', marginRight: 14
-    },
-    avatarText: { fontSize: 18, fontWeight: '700' },
-    cardInfo: { flex: 1, gap: 4 },
-    name: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
-    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    metaText: { fontSize: 13, fontWeight: '500' },
-    dot: { width: 3, height: 3, borderRadius: 1.5 },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-    errorText: { marginTop: 12, textAlign: 'center', fontSize: 15, fontWeight: '500' },
-    retryBtn: { marginTop: 20, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 },
-    retryText: { color: '#fff', fontWeight: '700' },
-    emptyContainer: { alignItems: 'center', marginTop: 100, gap: 16 },
-    emptyText: { fontSize: 15, fontWeight: '500', textAlign: 'center' },
+    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
+    avatar: { width: 50, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    avatarText: { fontSize: 22, fontWeight: '900' },
+    cardInfo: { flex: 1, gap: 6 },
+    name: { fontSize: 18, fontWeight: '900', letterSpacing: -0.4 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    metaPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+    meta: { fontSize: 12, fontWeight: '900' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16 },
+    emptyIconWrap: { width: 100, height: 100, borderRadius: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)', marginBottom: 8 },
+    emptyText: { fontSize: 22, fontWeight: '900', textAlign: 'center', letterSpacing: -0.5 },
+    emptySub: { fontSize: 15, textAlign: 'center', lineHeight: 22, fontWeight: '600', opacity: 0.6 },
+    errorText: { fontSize: 16, fontWeight: '800', textAlign: 'center' },
+    retryBtn: { marginTop: 12, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 16 },
+    retryText: { color: '#fff', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
 });
 
 export default PatientListScreen;
