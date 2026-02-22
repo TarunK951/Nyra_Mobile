@@ -15,6 +15,8 @@ import {
     ChevronLeft, PhoneCall, PhoneIncoming, PhoneOutgoing,
     Clock, Calendar, Mic, AlertCircle,
 } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
+import LiquidButton from '../components/LiquidButton';
 import { layout } from '../utils/layout';
 import { usePulse } from '../utils/animations';
 // Normalise messages from all possible shapes
@@ -75,17 +77,16 @@ const Bubble = ({ msg, colors }) => {
                 </View>
             )}
             {bot ? (
-                <BlurView
+                <LiquidGlass
                     intensity={g.blurStrong}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.bubble, styles.bubbleBot, { borderColor: g.border }]}
+                    containerStyle={[styles.bubble, styles.bubbleBot]}
+                    padding={14}
                 >
-                    <View style={[styles.bubbleShimmer, { backgroundColor: g.shimmer }]} />
                     <Text style={[styles.bubbleLabel, { color: colors.primary }]}>NyraAI</Text>
                     <Text style={[styles.bubbleTxt, { color: colors.foreground }]}>{msg.text}</Text>
                     {!!ts && <Text style={[styles.bubbleTime, { color: colors.mutedForeground }]}>{ts}</Text>}
-                </BlurView>
+                </LiquidGlass>
             ) : (
                 <View style={[styles.bubble, styles.bubbleUser, { backgroundColor: colors.primary }]}>
                     <Text style={[styles.bubbleTxt, { color: '#fff' }]}>{msg.text}</Text>
@@ -190,13 +191,14 @@ const ConversationDetailScreen = ({ route, navigation }) => {
     const g = colors.glass;
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             {/* Glass Header */}
-            <BlurView
+            <LiquidGlass
                 intensity={g.blurStrong}
                 tint={g.tint}
-                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                style={[styles.header, { borderBottomColor: g.borderSubtle }]}
+                padding={0}
+                containerStyle={styles.header}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
             >
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <ChevronLeft size={22} color={colors.primary} />
@@ -221,7 +223,7 @@ const ConversationDetailScreen = ({ route, navigation }) => {
                         )}
                     </View>
                 </View>
-            </BlurView>
+            </LiquidGlass>
 
             {loading ? (
                 <View style={styles.center}>
@@ -238,13 +240,12 @@ const ConversationDetailScreen = ({ route, navigation }) => {
                         <View>
                             {/* Meta card */}
                             {/* Meta card */}
-                            <BlurView
+                            <LiquidGlass
                                 intensity={g.blur}
                                 tint={g.tint}
-                                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                                style={[styles.metaCard, { borderColor: g.border }]}
+                                containerStyle={styles.metaCard}
+                                padding={18}
                             >
-                                <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
                                 <View style={styles.metaRow}>
                                     <Calendar size={14} color={colors.mutedForeground} />
                                     <Text style={[styles.metaTxt, { color: colors.mutedForeground }]}>{getFmtDate(conv)}</Text>
@@ -273,7 +274,7 @@ const ConversationDetailScreen = ({ route, navigation }) => {
                                         <Text style={[styles.metaTxt, { color: colors.mutedForeground }]}>Inbound</Text>
                                     </View>
                                 )}
-                            </BlurView>
+                            </LiquidGlass>
 
                             {/* Audio player — show when we have a URL, or the call has ended (recording likely exists) */}
                             {(audioUrl || ['ENDED', 'COMPLETED', 'FAILED'].includes(status)) && (

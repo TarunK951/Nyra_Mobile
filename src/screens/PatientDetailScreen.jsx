@@ -13,6 +13,8 @@ import {
     AlertCircle, PhoneCall, MessageSquare,
     Activity, ChevronRight, Heart,
 } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
+import LiquidButton from '../components/LiquidButton';
 import { layout } from '../utils/layout';
 import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
@@ -34,16 +36,15 @@ const Section = ({ title, children, colors, anim }) => {
     const g = colors.glass;
     return (
         <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }] } : {}}>
-            <BlurView
+            <LiquidGlass
                 intensity={g.blur}
                 tint={g.tint}
-                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                style={[styles.section, { borderColor: g.border }]}
+                containerStyle={styles.section}
+                padding={20}
             >
-                <View style={[styles.secShimmer, { backgroundColor: g.shimmer }]} />
                 <Text style={[styles.sectionTitle, { color: colors.primary }]}>{title}</Text>
                 {children}
-            </BlurView>
+            </LiquidGlass>
         </Animated.View>
     );
 };
@@ -121,7 +122,7 @@ const PatientDetailScreen = ({ route, navigation }) => {
 
     if (loading) {
         return (
-            <View style={[styles.center, { backgroundColor: colors.background }]}>
+            <View style={styles.center}>
                 <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
@@ -129,7 +130,7 @@ const PatientDetailScreen = ({ route, navigation }) => {
 
     if (!patient) {
         return (
-            <View style={[styles.center, { backgroundColor: colors.background }]}>
+            <View style={styles.center}>
                 <AlertCircle size={48} color="#ef4444" />
                 <Text style={[styles.errorTxt, { color: '#ef4444' }]}>Patient not found</Text>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.btn, { backgroundColor: colors.primary }]}>
@@ -145,13 +146,14 @@ const PatientDetailScreen = ({ route, navigation }) => {
     const { scale: mailScale, pressIn: mailIn, pressOut: mailOut } = useScalePressAnim();
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             {/* Glass Header */}
-            <BlurView
+            <LiquidGlass
                 intensity={g.blurStrong}
                 tint={g.tint}
-                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                style={[styles.header, { borderBottomColor: g.borderSubtle }]}
+                padding={0}
+                containerStyle={styles.header}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
             >
                 <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.muted }]}>
                     <ChevronLeft size={22} color={colors.foreground} strokeWidth={2.5} />
@@ -164,7 +166,7 @@ const PatientDetailScreen = ({ route, navigation }) => {
                         <Text style={[styles.headerSub, { color: colors.primary }]}>UHID: {patient.uhid}</Text>
                     )}
                 </View>
-            </BlurView>
+            </LiquidGlass>
 
             <ScrollView
                 contentContainerStyle={styles.scroll}
@@ -173,13 +175,13 @@ const PatientDetailScreen = ({ route, navigation }) => {
             >
                 {/* Avatar Hero */}
                 <Animated.View style={staggerAnims[0] ? { opacity: staggerAnims[0].opacity, transform: [{ translateY: staggerAnims[0].translateY }] } : {}}>
-                    <BlurView
+                    <LiquidGlass
                         intensity={g.blurStrong}
                         tint={g.tint}
-                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                        style={[styles.heroCard, { borderColor: g.border }]}
+                        containerStyle={styles.heroCard}
+                        padding={26}
+                        style={{ alignItems: 'center' }}
                     >
-                        <View style={[styles.secShimmer, { backgroundColor: g.shimmer }]} />
                         <View style={[styles.avatarLarge, { backgroundColor: colors.primary + '12' }]}>
                             <User size={44} color={colors.primary} strokeWidth={2.5} />
                         </View>
@@ -199,27 +201,22 @@ const PatientDetailScreen = ({ route, navigation }) => {
 
                         {/* Quick actions */}
                         <View style={styles.actions}>
-                            <Animated.View style={{ transform: [{ scale: callScale }] }}>
-                                <TouchableOpacity
-                                    onPressIn={callIn} onPressOut={callOut}
-                                    style={[styles.actionBtn, { backgroundColor: colors.primary }]}
-                                    onPress={() => Alert.alert('Call', `Call ${patient.phone}?`)}
-                                >
-                                    <PhoneCall size={16} color="#fff" />
-                                    <Text style={[styles.actionTxt, { color: "#fff" }]}>Call</Text>
-                                </TouchableOpacity>
-                            </Animated.View>
-                            <Animated.View style={{ transform: [{ scale: mailScale }] }}>
-                                <TouchableOpacity
-                                    onPressIn={mailIn} onPressOut={mailOut}
-                                    style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: g.border }]}
-                                >
-                                    <Mail size={16} color={colors.foreground} />
-                                    <Text style={[styles.actionTxt, { color: colors.foreground }]}>Email</Text>
-                                </TouchableOpacity>
-                            </Animated.View>
+                            <LiquidButton
+                                variant="primary"
+                                text="Call"
+                                icon={PhoneCall}
+                                onPress={() => Alert.alert('Call', `Call ${patient.phone}?`)}
+                                style={{ minWidth: 120 }}
+                            />
+                            <LiquidButton
+                                variant="glass"
+                                text="Email"
+                                icon={Mail}
+                                onPress={() => { }}
+                                style={{ minWidth: 120 }}
+                            />
                         </View>
-                    </BlurView>
+                    </LiquidGlass>
                 </Animated.View>
 
                 {/* Personal Info */}

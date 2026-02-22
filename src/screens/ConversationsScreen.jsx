@@ -8,6 +8,7 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { callApi } from '../api/calls';
 import { MessageSquare, PhoneIncoming, PhoneOutgoing, Search, ChevronRight, AlertCircle, Wifi } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
 import { layout } from '../utils/layout';
 import { useStagger, useScalePressAnim, usePulse, SPRING } from '../utils/animations';
 
@@ -43,13 +44,13 @@ const LiveDot = ({ color }) => {
 const SegmentTab = ({ tabs, active, onChange, colors }) => {
     const g = colors.glass;
     return (
-        <BlurView
+        <LiquidGlass
             intensity={g.blur}
             tint={g.tint}
-            experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-            style={[styles.segmentWrap, { borderColor: g.border }]}
+            containerStyle={styles.segmentWrap}
+            padding={4}
+            style={{ flexDirection: 'row' }}
         >
-            <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
             {tabs.map(t => {
                 const on = active === t;
                 return (
@@ -64,7 +65,7 @@ const SegmentTab = ({ tabs, active, onChange, colors }) => {
                     </TouchableOpacity>
                 );
             })}
-        </BlurView>
+        </LiquidGlass>
     );
 };
 
@@ -81,13 +82,13 @@ const CallCard = ({ item, index, colors, onPress, anim }) => {
     return (
         <Animated.View style={anim ? { opacity: anim.opacity, transform: [{ translateY: anim.translateY }, { scale }] } : { transform: [{ scale }] }}>
             <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1}>
-                <BlurView
+                <LiquidGlass
                     intensity={g.blur}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.card, { borderColor: isLive ? sColor : g.border }]}
+                    containerStyle={styles.card}
+                    padding={0}
+                    style={{ flexDirection: 'row', alignItems: 'center' }}
                 >
-                    <View style={[styles.cardShimmer, { backgroundColor: isLive ? sColor : g.shimmer }]} />
                     <View style={[styles.iconBox, { backgroundColor: sColor + '10' }]}>
                         <DirIcon size={20} color={sColor} strokeWidth={2.5} />
                     </View>
@@ -109,7 +110,7 @@ const CallCard = ({ item, index, colors, onPress, anim }) => {
                     <View style={[styles.arrowBox, { backgroundColor: colors.muted }]}>
                         <ChevronRight size={14} color={colors.foreground} strokeWidth={3} />
                     </View>
-                </BlurView>
+                </LiquidGlass>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -157,7 +158,7 @@ const ConversationsScreen = ({ navigation }) => {
     });
 
     return (
-        <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <View style={styles.screen}>
             {/* Header */}
             <View style={[styles.header, { paddingTop: layout.statusBarHeight + 10 }]}>
                 <View>
@@ -174,11 +175,11 @@ const ConversationsScreen = ({ navigation }) => {
 
             {/* Search */}
             <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-                <BlurView
+                <LiquidGlass
                     intensity={g.blur}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.searchBlur, { borderColor: g.border }]}
+                    padding={0}
+                    style={styles.searchBlur}
                 >
                     <View style={styles.searchIcon}>
                         <Search size={18} color={colors.primary} strokeWidth={2.5} />
@@ -190,7 +191,7 @@ const ConversationsScreen = ({ navigation }) => {
                         value={search}
                         onChangeText={setSearch}
                     />
-                </BlurView>
+                </LiquidGlass>
             </View>
 
             {loading && !refresh ? (

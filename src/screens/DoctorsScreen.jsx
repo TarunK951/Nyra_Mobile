@@ -144,6 +144,10 @@ const DoctorsScreen = ({ navigation }) => {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* Rich Apple Background Layering */}
+            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '08' }]} />
+            <View style={[styles.bgGlowSecondary, { backgroundColor: colors.success + '05' }]} />
+
             {/* Search bar */}
             <BlurView
                 intensity={g.blur}
@@ -219,6 +223,8 @@ const DoctorsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    bgGlow: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
+    bgGlowSecondary: { position: 'absolute', bottom: -150, right: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
     searchBar: {
         flexDirection: 'row', alignItems: 'center',
         margin: 16, borderRadius: 16, borderWidth: 1,
@@ -226,7 +232,7 @@ const styles = StyleSheet.create({
         marginTop: layout.statusBarHeight + 10,
         overflow: 'hidden',
     },
-    searchInput: { flex: 1, fontSize: 15, marginLeft: 10, fontWeight: '600' },
+    searchInput: { flex: 1, fontSize: 13, marginLeft: 10, fontWeight: '700' },
     list: { paddingHorizontal: 16, paddingBottom: layout.tabBarHeight + 20 },
     countLabel: { fontSize: 12, fontWeight: '800', marginBottom: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
     card: {

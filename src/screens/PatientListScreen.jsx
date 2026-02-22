@@ -8,6 +8,8 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '../theme/ThemeContext';
 import { patientApi } from '../api/patients';
 import { Search, Plus, AlertCircle, Users, ChevronRight, Phone } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
+import LiquidButton from '../components/LiquidButton';
 import { layout } from '../utils/layout';
 import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
@@ -24,13 +26,12 @@ const PatientCard = ({ item, onPress, colors, anim }) => {
                 onPressOut={pressOut}
                 activeOpacity={1}
             >
-                <BlurView
+                <LiquidGlass
                     intensity={g.blur}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.card, { borderColor: g.border }]}
+                    style={styles.card}
+                    padding={0}
                 >
-                    <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
                     <View style={[styles.avatar, { backgroundColor: colors.primary + '10' }]}>
                         <Text style={[styles.avatarText, { color: colors.primary }]}>
                             {(item.name || 'P').charAt(0).toUpperCase()}
@@ -54,8 +55,8 @@ const PatientCard = ({ item, onPress, colors, anim }) => {
                             </View>
                         </View>
                     </View>
-                    <ChevronRight size={14} color={colors.mutedForeground} strokeWidth={3} opacity={0.3} />
-                </BlurView>
+                    <ChevronRight size={14} color={colors.mutedForeground} strokeWidth={3} opacity={0.3} style={{ marginRight: 16 }} />
+                </LiquidGlass>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -116,6 +117,10 @@ const PatientListScreen = ({ navigation }) => {
 
     return (
         <View style={[styles.screen, { backgroundColor: colors.background }]}>
+            {/* Rich Apple Background Layering */}
+            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '08' }]} />
+            <View style={[styles.bgGlowSecondary, { backgroundColor: colors.error + '05' }]} />
+
             {/* Header */}
             <View style={[styles.header, { paddingTop: layout.statusBarHeight + 10 }]}>
                 <View>
@@ -124,18 +129,25 @@ const PatientListScreen = ({ navigation }) => {
                         {total > 0 ? `${total} Records Found` : 'No Records'}
                     </Text>
                 </View>
-                <TouchableOpacity activeOpacity={0.8} style={[styles.addBtn, { backgroundColor: colors.primary }]}>
-                    <Plus size={24} color="#fff" strokeWidth={3} />
+                <TouchableOpacity onPress={() => { }} activeOpacity={0.8}>
+                    <LiquidGlass
+                        intensity={40} tint={g.tint}
+                        style={styles.addBtn}
+                        padding={0}
+                        containerStyle={{ borderRadius: 18 }}
+                    >
+                        <Plus size={24} color={colors.primary} strokeWidth={3} />
+                    </LiquidGlass>
                 </TouchableOpacity>
             </View>
 
             {/* Glass Search Bar */}
             <Animated.View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
                 <Animated.View style={{ borderColor: searchBorder, borderWidth: 1.5, borderRadius: 22, overflow: 'hidden' }}>
-                    <BlurView
+                    <LiquidGlass
                         intensity={g.blurStrong}
                         tint={g.tint}
-                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                        padding={0}
                         style={styles.searchBlur}
                     >
                         <Search size={18} color={searchFocus ? colors.primary : colors.mutedForeground} strokeWidth={2.5} />
@@ -148,7 +160,7 @@ const PatientListScreen = ({ navigation }) => {
                             onFocus={onSearchFocus}
                             onBlur={onSearchBlur}
                         />
-                    </BlurView>
+                    </LiquidGlass>
                 </Animated.View>
             </Animated.View>
 
@@ -203,9 +215,11 @@ const PatientListScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     screen: { flex: 1 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
-    title: { fontSize: 32, fontWeight: '900', letterSpacing: -0.8 },
-    count: { fontSize: 11, fontWeight: '900', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1, opacity: 0.5 },
+    bgGlow: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
+    bgGlowSecondary: { position: 'absolute', bottom: -150, right: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 16 },
+    title: { fontSize: 28, fontWeight: '900', letterSpacing: -0.8 },
+    count: { fontSize: 10, fontWeight: '800', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1, opacity: 0.5 },
     addBtn: {
         width: 50, height: 50, borderRadius: 18,
         justifyContent: 'center', alignItems: 'center',

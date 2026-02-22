@@ -6,8 +6,9 @@ import {
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import {
-    LayoutDashboard, Users, Sparkles, Calendar, MoreHorizontal,
+    LayoutDashboard, Users, Zap, Calendar, MoreHorizontal,
 } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
 import DashboardScreen from '../screens/DashboardScreen';
 import PatientsNavigator from './PatientsNavigator';
 import AppointmentsNavigator from './AppointmentsNavigator';
@@ -36,18 +37,19 @@ const NyraFab = ({ colors }) => {
     return (
         <Animated.View style={[styles.fabOuter, { transform: [{ scale: pulse }] }]}>
             <View style={[styles.fabRing, { borderColor: colors.primary + '30' }]}>
-                <BlurView
-                    intensity={32}
+                <LiquidGlass
+                    intensity={colors.glass.blurStrong}
                     tint={colors.glass.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.fabGlass, { borderColor: colors.glass.border }]}
+                    containerStyle={styles.fabGlass}
+                    padding={0}
                 >
                     <View style={[styles.fabCore, { backgroundColor: colors.primary }]}>
                         <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                            <Sparkles size={22} color="#fff" strokeWidth={2.5} />
+                            <Zap size={24} color="#fff" strokeWidth={2.5} fill="#fff" />
                         </Animated.View>
+                        <View style={styles.fabGlowInner} />
                     </View>
-                </BlurView>
+                </LiquidGlass>
             </View>
         </Animated.View>
     );
@@ -82,18 +84,12 @@ const GlassTabBar = ({ state, descriptors, navigation, colors }) => {
 
     return (
         <View style={[styles.barContainer, { pointerEvents: 'box-none' }]}>
-            <BlurView
+            <LiquidGlass
                 intensity={colors.glass.blurStrong}
                 tint={colors.glass.tint}
-                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                style={[styles.bar, {
-                    borderColor: colors.glass.border,
-                    shadowColor: colors.glass.shadow,
-                }]}
+                padding={0}
+                containerStyle={styles.bar}
             >
-                {/* Top shimmer line */}
-                <View style={[styles.shimmerLine, { backgroundColor: colors.glass.shimmer }]} />
-
                 <View style={styles.tabRow}>
                     {routes.map((route, idx) => {
                         const { options } = descriptors[route.key];
@@ -154,7 +150,7 @@ const GlassTabBar = ({ state, descriptors, navigation, colors }) => {
                         );
                     })}
                 </View>
-            </BlurView>
+            </LiquidGlass>
         </View>
     );
 };
@@ -231,6 +227,11 @@ const styles = StyleSheet.create({
     fabCore: {
         flex: 1, margin: 4, borderRadius: 23,
         justifyContent: 'center', alignItems: 'center',
+        position: 'relative', overflow: 'hidden',
+    },
+    fabGlowInner: {
+        position: 'absolute', width: 40, height: 40, borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)', top: -10, right: -10,
     },
 });
 

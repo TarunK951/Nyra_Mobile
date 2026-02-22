@@ -355,6 +355,10 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* Rich Apple Background Layering */}
+            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '08' }]} />
+            <View style={[styles.bgGlowSecondary, { backgroundColor: colors.success + '05' }]} />
+
             {/* ── Glass Header ── */}
             <BlurView
                 intensity={g.blurStrong}
@@ -362,15 +366,15 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
                 experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
                 style={[styles.header, { borderBottomColor: g.borderSubtle }]}
             >
-                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.muted }]}>
-                    <ChevronLeft size={22} color={colors.foreground} />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.primary + '12' }]}>
+                    <ChevronLeft size={20} color={colors.primary} strokeWidth={3} />
                 </TouchableOpacity>
                 <View style={styles.headerMid}>
                     <Text style={[styles.headerTitle, { color: colors.foreground }]}>
                         {doctor?.name || 'Schedule'}
                     </Text>
-                    <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-                        Availability Settings
+                    <Text style={[styles.headerSub, { color: colors.primary }]}>
+                        AVAILABILITY SETTINGS
                     </Text>
                 </View>
                 <TouchableOpacity
@@ -485,20 +489,22 @@ const DoctorScheduleScreen = ({ route, navigation }) => {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    bgGlow: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
+    bgGlowSecondary: { position: 'absolute', bottom: -150, right: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
     header: {
         flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: 16, paddingTop: layout.statusBarHeight + 4, paddingBottom: 14,
-        borderBottomWidth: 1, gap: 10, overflow: 'hidden',
+        borderBottomWidth: 1, gap: 12, overflow: 'hidden',
     },
-    backBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    backBtn: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     headerMid: { flex: 1 },
-    headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
-    headerSub: { fontSize: 13, fontWeight: '600' },
+    headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.4 },
+    headerSub: { fontSize: 10, fontWeight: '800', letterSpacing: 1, opacity: 0.8 },
     saveBtn: {
         paddingHorizontal: 20, paddingVertical: 10,
         borderRadius: 14, minWidth: 70, alignItems: 'center',
     },
-    saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 14, textTransform: 'uppercase' },
+    saveBtnText: { color: '#fff', fontWeight: '900', fontSize: 13, textTransform: 'uppercase' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     body: { padding: 16, gap: 16, paddingTop: 10 },
 

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import DrawerNavigator from './DrawerNavigator';
 import NetworkGate from '../components/NetworkGate';
+import GlassBackground from '../components/GlassBackground';
 
 const Stack = createStackNavigator();
 
@@ -18,13 +19,17 @@ const AppNavigator = () => {
     return (
         <NavigationContainer>
             <NetworkGate>
-                <Stack.Navigator screenOptions={{ headerShown: false }}>
-                    {isAuthenticated ? (
-                        <Stack.Screen name="Main" component={DrawerNavigator} />
-                    ) : (
+                {isAuthenticated ? (
+                    <GlassBackground>
+                        <Stack.Navigator screenOptions={{ headerShown: false }}>
+                            <Stack.Screen name="Main" component={DrawerNavigator} />
+                        </Stack.Navigator>
+                    </GlassBackground>
+                ) : (
+                    <Stack.Navigator screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="Login" component={LoginScreen} />
-                    )}
-                </Stack.Navigator>
+                    </Stack.Navigator>
+                )}
             </NetworkGate>
         </NavigationContainer>
     );

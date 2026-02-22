@@ -35,5 +35,9 @@
     "react-native-worklets": "0.5.1",
     "socket.io-client": "^4.8.3"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
+  }
 }

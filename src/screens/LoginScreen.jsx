@@ -8,6 +8,8 @@ import {
 import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
+import LiquidButton from '../components/LiquidButton';
+import LiquidGlass from '../components/LiquidGlass';
 import { Mail, Lock, ArrowRight, Sparkles, UserCheck } from 'lucide-react-native';
 import { useFadeIn, useSlideUp, useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
@@ -31,8 +33,7 @@ const Orb = ({ x, y, size, color, delay, duration = 6000 }) => {
         <Animated.View style={[styles.orb, {
             left: x, top: y, width: size, height: size, borderRadius: size / 2,
             backgroundColor: color, transform: [{ translateY }, { scale }],
-            backgroundColor: color + '40', transform: [{ translateY }, { scale }],
-            opacity: 0.6,
+            opacity: 0.15,
         }]} />
     );
 };
@@ -58,11 +59,12 @@ const GlassInput = ({ icon: Icon, value, onChangeText, placeholder, secureTextEn
 
     return (
         <Animated.View style={anim ? { borderColor, borderWidth: 1.5, borderRadius: 20, marginBottom: 14, opacity: anim.opacity, transform: [{ translateY: anim.translateY }] } : { borderColor, borderWidth: 1.5, borderRadius: 20, marginBottom: 14 }}>
-            <BlurView
+            <LiquidGlass
                 intensity={colors.glass.blurStrong}
                 tint={colors.glass.tint}
-                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
+                padding={0}
                 style={styles.inputBlur}
+                containerStyle={{ borderRadius: 20 }}
             >
                 <View style={[styles.inputIcon, { backgroundColor: focused ? colors.primary + '15' : 'transparent' }]}>
                     <Icon size={18} color={focused ? colors.primary : colors.mutedForeground} strokeWidth={2.5} />
@@ -79,7 +81,7 @@ const GlassInput = ({ icon: Icon, value, onChangeText, placeholder, secureTextEn
                     onFocus={onFocus}
                     onBlur={onBlur}
                 />
-            </BlurView>
+            </LiquidGlass>
         </Animated.View>
     );
 };
@@ -157,13 +159,12 @@ const LoginScreen = () => {
                 </Animated.View>
 
                 {/* Glass login card */}
-                <BlurView
+                <LiquidGlass
                     intensity={colors.glass.blurStrong}
                     tint={colors.glass.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.card, { borderColor: colors.glass.border }]}
+                    style={{ padding: 30 }}
+                    containerStyle={styles.card}
                 >
-                    <View style={[styles.cardShimmer, { backgroundColor: colors.glass.shimmer }]} />
                     <View style={styles.cardGlow} />
 
                     {error ? (
@@ -192,24 +193,20 @@ const LoginScreen = () => {
                     />
 
                     {/* Login button */}
-                    <Animated.View style={staggerAnims[2] ? { opacity: staggerAnims[2].opacity, transform: [{ translateY: staggerAnims[2].translateY }, { scale: btnScale }] } : { transform: [{ scale: btnScale }] }}>
-                        <TouchableOpacity
-                            onPress={handleLogin}
-                            onPressIn={pressIn}
-                            onPressOut={pressOut}
-                            disabled={loading}
-                            activeOpacity={1}
-                            style={[styles.loginBtn, { backgroundColor: colors.foreground }]}
-                        >
-                            {loading
-                                ? <ActivityIndicator color={colors.background} />
-                                : <>
-                                    <Text style={[styles.loginBtnText, { color: colors.background }]}>Sign Into Nyra</Text>
-                                    <ArrowRight size={20} color={colors.background} strokeWidth={3} />
-                                </>
-                            }
-                        </TouchableOpacity>
-                    </Animated.View>
+                    <LiquidButton
+                        variant="primary"
+                        onPress={handleLogin}
+                        disabled={loading}
+                        style={{ marginTop: 10 }}
+                    >
+                        {loading
+                            ? <ActivityIndicator color={colors.background} />
+                            : <>
+                                <Text style={[styles.loginBtnText, { color: colors.background }]}>Sign Into Nyra</Text>
+                                <ArrowRight size={20} color={colors.background} strokeWidth={3} style={{ marginLeft: 10 }} />
+                            </>
+                        }
+                    </LiquidButton>
 
                     <Animated.View style={staggerAnims[3] ? { opacity: staggerAnims[3].opacity, transform: [{ translateY: staggerAnims[3].translateY }] } : {}}>
                         <TouchableOpacity style={styles.forgotBtn}>
@@ -218,7 +215,7 @@ const LoginScreen = () => {
                             </Text>
                         </TouchableOpacity>
                     </Animated.View>
-                </BlurView>
+                </LiquidGlass>
 
                 {/* Footer */}
                 <Animated.View style={[styles.footer, { opacity: headerOpacity }]}>

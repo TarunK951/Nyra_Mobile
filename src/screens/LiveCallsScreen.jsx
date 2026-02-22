@@ -13,6 +13,7 @@ import { getName, getPhone, getConvId, getType, normaliseList } from '../shared/
 import {
     PhoneCall, ChevronRight, AlertCircle, Wifi, WifiOff, Clock,
 } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
 import { layout } from '../utils/layout';
 import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
@@ -91,15 +92,14 @@ const LiveCallCard = ({ item, colors, elapsed, onPress, anim }) => {
                 onPressIn={pressIn}
                 onPressOut={pressOut}
             >
-                <BlurView
+                <LiquidGlass
                     intensity={g.blur}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.card, { borderColor: g.border }]}
+                    padding={16}
+                    borderRadius={24}
+                    style={{ flexDirection: 'row', alignItems: 'center' }}
                 >
-                    <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
                     <View style={[styles.accentBar, { backgroundColor: typeColor }]} />
-
                     <PulsingRing color="#ef4444" />
 
                     <View style={styles.cardBody}>
@@ -126,7 +126,7 @@ const LiveCallCard = ({ item, colors, elapsed, onPress, anim }) => {
                         </View>
                     </View>
                     <ChevronRight size={14} color={colors.mutedForeground} strokeWidth={3} opacity={0.4} />
-                </BlurView>
+                </LiquidGlass>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -235,13 +235,14 @@ const LiveCallsScreen = ({ navigation }) => {
     const g = colors.glass;
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             {/* WS status banner */}
-            <BlurView
+            <LiquidGlass
                 intensity={g.blurStrong}
                 tint={g.tint}
-                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                style={[styles.wsBanner, { borderBottomColor: g.borderSubtle, borderBottomWidth: 1 }]}
+                padding={0}
+                containerStyle={styles.wsBanner}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 }}
             >
                 <View style={styles.bannerGlow} />
                 <View style={[styles.wsPill, { backgroundColor: wsConnected ? colors.success + '15' : colors.muted }]}>
@@ -257,15 +258,15 @@ const LiveCallsScreen = ({ navigation }) => {
                         </Text>
                     </View>
                 )}
-            </BlurView>
+            </LiquidGlass>
 
             {/* Type filter segment */}
             <Animated.View style={staggerAnims[0] ? [styles.filterOuter, { opacity: staggerAnims[0].opacity, transform: [{ translateY: staggerAnims[0].translateY }] }] : styles.filterOuter}>
-                <BlurView
+                <LiquidGlass
                     intensity={g.blur}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.filterRow, { borderColor: g.border }]}
+                    padding={0}
+                    containerStyle={styles.filterRow}
                 >
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
                         {TYPE_TABS.map(t => {
@@ -286,7 +287,7 @@ const LiveCallsScreen = ({ navigation }) => {
                             );
                         })}
                     </ScrollView>
-                </BlurView>
+                </LiquidGlass>
             </Animated.View>
 
             {loading ? (
@@ -310,9 +311,12 @@ const LiveCallsScreen = ({ navigation }) => {
                         <LiveCardWrapper
                             item={item}
                             colors={colors}
-                            onPress={() => navigation.navigate('ConversationDetail', {
-                                conversation: item,
-                                conversationId: getConvId(item),
+                            onPress={() => navigation.navigate('Conversations', {
+                                screen: 'ConversationDetail',
+                                params: {
+                                    conversation: item,
+                                    conversationId: getConvId(item),
+                                }
                             })}
                             anim={staggerAnims[index + 1]}
                         />
@@ -343,48 +347,41 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     wsBanner: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingVertical: 12, overflow: 'hidden',
+        paddingHorizontal: 16, paddingVertical: 10,
     },
-    bannerGlow: { position: 'absolute', width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.1)', top: -20, left: -20 },
-    wsPill: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-    wsStatusDot: { width: 6, height: 6, borderRadius: 3 },
-    wsTxt: { fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
-    activeIndicator: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-    countBadge: { fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
+    bannerGlow: { position: 'absolute', width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.08)', top: -20, left: -20 },
+    wsPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+    wsStatusDot: { width: 5, height: 5, borderRadius: 2.5 },
+    wsTxt: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+    activeIndicator: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+    countBadge: { fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
 
-    filterOuter: { paddingHorizontal: 20, marginTop: 16, marginBottom: 12 },
+    filterOuter: { paddingHorizontal: 16, marginTop: 14, marginBottom: 10 },
     filterRow: {
-        flexDirection: 'row', borderRadius: 18, borderWidth: 1, overflow: 'hidden',
+        flexDirection: 'row', borderRadius: 15, borderWidth: 1, overflow: 'hidden',
     },
-    filterScroll: { padding: 5 },
-    filterTab: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, marginRight: 5, minWidth: 80, alignItems: 'center' },
-    filterTxt: { fontSize: 10, letterSpacing: 1 },
+    filterScroll: { padding: 4 },
+    filterTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginRight: 5, minWidth: 70, alignItems: 'center' },
+    filterTxt: { fontSize: 9, letterSpacing: 1 },
 
-    list: { padding: 20, paddingBottom: layout.tabBarHeight + 20 },
-    card: {
-        flexDirection: 'row', alignItems: 'center',
-        borderRadius: 26, borderWidth: 1,
-        padding: 18, marginBottom: 14, overflow: 'hidden',
-        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 16 }, android: { elevation: 6 } }),
-    },
-    cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
-    accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4.5 },
-    cardBody: { flex: 1, marginLeft: 16 },
-    cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-    name: { fontSize: 18, fontWeight: '900', flex: 1, letterSpacing: -0.5 },
-    phone: { fontSize: 14, fontWeight: '700', opacity: 0.6 },
-    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
-    pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
-    pillTxt: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
-    timerRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    timer: { fontSize: 14, fontWeight: '900', fontVariant: ['tabular-nums'] },
-    liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-    liveDot: { width: 7, height: 7, borderRadius: 4 },
-    liveTxt: { fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
+    list: { padding: 16, paddingBottom: layout.tabBarHeight + 20 },
+    accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
+    cardBody: { flex: 1, marginLeft: 14 },
+    cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+    name: { fontSize: 17, fontWeight: '900', flex: 1, letterSpacing: -0.4 },
+    phone: { fontSize: 13, fontWeight: '700', opacity: 0.6 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+    pill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
+    pillTxt: { fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+    timerRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    timer: { fontSize: 13, fontWeight: '900', fontVariant: ['tabular-nums'] },
+    liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    liveDot: { width: 6, height: 6, borderRadius: 3 },
+    liveTxt: { fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
 
-    ringWrap: { width: 50, height: 50, justifyContent: 'center', alignItems: 'center' },
-    ring: { position: 'absolute', width: 50, height: 50, borderRadius: 25, borderWidth: 2 },
-    dot: { width: 14, height: 14, borderRadius: 7 },
+    ringWrap: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+    ring: { position: 'absolute', width: 44, height: 44, borderRadius: 22, borderWidth: 1.5 },
+    dot: { width: 12, height: 12, borderRadius: 6 },
 
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, gap: 16 },
     emptyIconWrap: { width: 100, height: 100, borderRadius: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)' },

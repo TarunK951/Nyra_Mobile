@@ -13,6 +13,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import AppointmentsNavigator from './AppointmentsNavigator';
 import DoctorsNavigator from './DoctorsNavigator';
 import ConversationsNavigator from './ConversationsNavigator';
+import LiquidGlass from '../components/LiquidGlass';
 import LiveCallsScreen from '../screens/LiveCallsScreen';
 import FollowUpScreen from '../screens/FollowUpScreen';
 import ReminderCallsScreen from '../screens/ReminderCallsScreen';
@@ -45,11 +46,12 @@ const CustomDrawerContent = (props) => {
 
     return (
         <DrawerContentScrollView {...props} style={{ backgroundColor: colors.background }}>
-            <BlurView
+            <LiquidGlass
                 intensity={colors.glass.blur}
                 tint={colors.glass.tint}
-                experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                style={[styles.drawerHeaderBlur, { borderBottomColor: colors.glass.border }]}
+                containerStyle={styles.drawerHeaderBlur}
+                padding={0}
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 20 }}
             >
                 <View style={[styles.logoSquare, { backgroundColor: colors.primary + '15' }]}>
                     <Image
@@ -61,7 +63,7 @@ const CustomDrawerContent = (props) => {
                     <Text style={[styles.userName, { color: colors.foreground }]}>{user?.name || 'Staff'}</Text>
                     <Text style={[styles.userRole, { color: colors.mutedForeground }]}>{user?.role?.replace('_', ' ') || 'Healthcare'}</Text>
                 </View>
-            </BlurView>
+            </LiquidGlass>
             <View style={[styles.divider, { backgroundColor: colors.glass.borderSubtle }]} />
             <DrawerItemList {...props} />
         </DrawerContentScrollView>

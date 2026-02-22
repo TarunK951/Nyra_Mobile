@@ -9,10 +9,12 @@ import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import {
     Users, Calendar, TrendingUp, ChevronRight,
-    Bell, Stethoscope, Activity, AlertCircle,
+    Bell, Stethoscope, Activity, AlertCircle, User,
+    History,
 } from 'lucide-react-native';
 import { patientApi } from '../api/patients';
 import { appointmentApi } from '../api/appointments';
+import LiquidGlass from '../components/LiquidGlass';
 import { layout } from '../utils/layout';
 import { useFadeIn, useSlideUp, useStagger, useScalePressAnim } from '../utils/animations';
 
@@ -27,28 +29,21 @@ const StatCard = ({ stat, colors, delay }) => {
     return (
         <Animated.View style={{ opacity, transform: [{ translateY }, { scale }], width: CARD_W }}>
             <TouchableOpacity onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1}>
-                <BlurView
+                <LiquidGlass
                     intensity={g.blur}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.statCard, { borderColor: g.border }]}
+                    padding={16}
+                    borderRadius={22}
+                    style={{ minHeight: 125, justifyContent: 'space-between' }}
                 >
-                    <View style={[styles.statShimmer, { backgroundColor: g.shimmer }]} />
-                    <View style={styles.statContent}>
-                        <View style={[styles.statIconWrap, { backgroundColor: stat.color + '12' }]}>
-                            <stat.icon size={20} color={stat.color} strokeWidth={2.5} />
-                        </View>
-                        <View style={styles.statValueRow}>
-                            <Text style={[styles.statValue, { color: colors.foreground }]}>{stat.value}</Text>
-                        </View>
-                        <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{stat.label}</Text>
-                        {stat.sub && (
-                            <View style={[styles.statSubBadge, { backgroundColor: stat.color + '15' }]}>
-                                <Text style={[styles.statSub, { color: stat.color }]}>{stat.sub}</Text>
-                            </View>
-                        )}
+                    <View style={[styles.statIconWrap, { backgroundColor: stat.color + '12' }]}>
+                        <stat.icon size={18} color={stat.color} strokeWidth={2.5} />
                     </View>
-                </BlurView>
+                    <View style={styles.statValueRow}>
+                        <Text style={[styles.statValue, { color: colors.foreground }]}>{stat.value}</Text>
+                    </View>
+                    <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{stat.label}</Text>
+                </LiquidGlass>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -91,17 +86,18 @@ const QuickAction = ({ icon: Icon, label, color, onPress, colors }) => {
     return (
         <Animated.View style={{ transform: [{ scale }], flex: 1 }}>
             <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1}>
-                <BlurView
-                    intensity={g.blur} tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.qaCard, { borderColor: g.border }]}
+                <LiquidGlass
+                    intensity={g.blur}
+                    tint={g.tint}
+                    padding={12}
+                    borderRadius={18}
+                    style={{ alignItems: 'center', gap: 6 }}
                 >
-                    <View style={[styles.statShimmer, { backgroundColor: g.shimmer }]} />
                     <View style={[styles.qaIcon, { backgroundColor: color + '12' }]}>
                         <Icon size={18} color={color} strokeWidth={2.5} />
                     </View>
                     <Text style={[styles.qaLabel, { color: colors.foreground }]}>{label}</Text>
-                </BlurView>
+                </LiquidGlass>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -164,6 +160,10 @@ const DashboardScreen = ({ navigation }) => {
 
     return (
         <View style={[styles.screen, { backgroundColor: colors.background }]}>
+            {/* Rich Apple Background Layering */}
+            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '08' }]} />
+            <View style={[styles.bgGlowSecondary, { backgroundColor: colors.success + '05' }]} />
+
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -178,24 +178,52 @@ const DashboardScreen = ({ navigation }) => {
             >
                 {/* Header */}
                 <Animated.View style={[styles.header, { opacity: headerOp }]}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.greeting, { color: colors.primary }]}>{greetStr},</Text>
-                        <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{firstName} ✨</Text>
-                    </View>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('More')}
-                        activeOpacity={0.8}
-                        style={[styles.bellWrap, { borderColor: g.border }]}
-                    >
-                        <BlurView
-                            intensity={g.blurStrong} tint={g.tint}
-                            experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                            style={styles.bellBlur}
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('More')}
+                            activeOpacity={0.8}
+                            style={[styles.avatarBox, { backgroundColor: colors.primary + '12', borderColor: colors.primary + '20' }]}
                         >
-                            <Bell size={20} color={colors.foreground} strokeWidth={2.5} />
-                            <View style={[styles.notifDot, { backgroundColor: colors.error }]} />
-                        </BlurView>
-                    </TouchableOpacity>
+                            <User size={20} color={colors.primary} strokeWidth={2.5} />
+                        </TouchableOpacity>
+                        <View>
+                            <Text style={[styles.greeting, { color: colors.primary }]}>{greetStr},</Text>
+                            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{firstName} ✨</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.headerRight}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('ReminderCalls')}
+                            activeOpacity={0.8}
+                            style={styles.headerIconBtn}
+                        >
+                            <LiquidGlass
+                                intensity={g.blurStrong} tint={g.tint}
+                                padding={0}
+                                borderRadius={15}
+                                style={styles.iconBlur}
+                            >
+                                <History size={20} color={colors.foreground} strokeWidth={2.5} />
+                            </LiquidGlass>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('More')}
+                            activeOpacity={0.8}
+                            style={styles.headerIconBtn}
+                        >
+                            <LiquidGlass
+                                intensity={g.blurStrong} tint={g.tint}
+                                padding={0}
+                                borderRadius={15}
+                                style={styles.iconBlur}
+                            >
+                                <Bell size={20} color={colors.foreground} strokeWidth={2.5} />
+                                <View style={[styles.notifDot, { backgroundColor: colors.error }]} />
+                            </LiquidGlass>
+                        </TouchableOpacity>
+                    </View>
                 </Animated.View>
 
                 {/* Error banner */}
@@ -234,12 +262,11 @@ const DashboardScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                <BlurView
+                <LiquidGlass
                     intensity={g.blurStrong} tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.listCard, { borderColor: g.border }]}
+                    padding={0}
+                    containerStyle={styles.listCard}
                 >
-                    <View style={[styles.listShimmer, { backgroundColor: g.shimmer }]} />
                     {loading ? (
                         <View style={styles.loader}><ActivityIndicator color={colors.primary} /></View>
                     ) : recentPatients.length > 0 ? (
@@ -260,7 +287,7 @@ const DashboardScreen = ({ navigation }) => {
                             <Text style={[styles.emptyTxt, { color: colors.mutedForeground }]}>No recent patients</Text>
                         </View>
                     )}
-                </BlurView>
+                </LiquidGlass>
 
                 <View style={{ height: layout.tabBarHeight + 24 }} />
             </ScrollView>
@@ -270,14 +297,19 @@ const DashboardScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     screen: { flex: 1 },
+    bgGlow: { position: 'absolute', top: -100, right: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
+    bgGlowSecondary: { position: 'absolute', bottom: -150, left: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
     scroll: { paddingHorizontal: 20 },
 
-    header: { flexDirection: 'row', alignItems: 'center', marginBottom: 28 },
-    greeting: { fontSize: 14, fontWeight: '800', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 },
-    name: { fontSize: 32, fontWeight: '900', letterSpacing: -1 },
-    bellWrap: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
-    bellBlur: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
-    notifDot: { position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: '#fff' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+    avatarBox: { width: 42, height: 42, borderRadius: 15, borderWith: 1, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+    greeting: { fontSize: 13, fontWeight: '800', marginBottom: 0, textTransform: 'uppercase', letterSpacing: 1 },
+    name: { fontSize: 26, fontWeight: '900', letterSpacing: -0.6 },
+    headerRight: { flexDirection: 'row', gap: 10 },
+    headerIconBtn: { borderRadius: 15, overflow: 'hidden' },
+    iconBlur: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center' },
+    notifDot: { position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: 3, borderWidth: 1.2, borderColor: '#fff' },
 
     errBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -286,60 +318,37 @@ const styles = StyleSheet.create({
     },
     errText: { fontSize: 14, fontWeight: '700', flex: 1 },
 
-    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 30 },
-    statCard: {
-        borderRadius: 28, borderWidth: 1, overflow: 'hidden',
-        padding: 20, minHeight: 145,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 16 },
-            android: { elevation: 5 },
-        }),
-    },
-    statShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
-    statContent: { flex: 1, justifyContent: 'space-between' },
-    statIconWrap: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
+    statIconWrap: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
     statValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-    statValue: { fontSize: 28, fontWeight: '900', letterSpacing: -1 },
-    statLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.6 },
-    statSubBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginTop: 8 },
-    statSub: { fontSize: 11, fontWeight: '800' },
+    statValue: { fontSize: 24, fontWeight: '900', letterSpacing: -0.8 },
+    statLabel: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.6 },
+    statSub: { fontSize: 10, fontWeight: '700', marginTop: 4, opacity: 0.8 },
 
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 10 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, marginTop: 10 },
     sectionTitle: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
-    seeAll: { fontSize: 14, fontWeight: '800' },
+    seeAll: { fontSize: 13, fontWeight: '800', opacity: 0.6 },
 
-    qaRow: { flexDirection: 'row', gap: 12, marginBottom: 30 },
-    qaCard: {
-        borderRadius: 24, borderWidth: 1, overflow: 'hidden',
-        padding: 16, alignItems: 'center', gap: 10,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12 },
-            android: { elevation: 4 },
-        }),
-    },
-    qaIcon: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-    qaLabel: { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
+    qaRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
+    qaIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    qaLabel: { fontSize: 11, fontWeight: '800', letterSpacing: -0.2 },
 
     listCard: {
-        borderRadius: 30, borderWidth: 1, overflow: 'hidden',
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 20 },
-            android: { elevation: 6 },
-        }),
+        borderRadius: 22, borderWidth: 1, overflow: 'hidden',
     },
     listShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, zIndex: 1 },
-    patientRow: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
-    avatar: { width: 50, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-    avatarText: { fontSize: 18, fontWeight: '900' },
-    patName: { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-    patMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
-    patMeta: { fontSize: 13, fontWeight: '600', opacity: 0.7 },
-    metaDot: { width: 4, height: 4, borderRadius: 2, opacity: 0.3 },
-    rowArrow: { width: 28, height: 28, borderRadius: 10, justifyContent: 'center', alignItems: 'center', opacity: 0.7 },
+    patientRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10 },
+    avatar: { width: 42, height: 42, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    avatarText: { fontSize: 15, fontWeight: '900' },
+    patName: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+    patMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+    patMeta: { fontSize: 11, fontWeight: '600', opacity: 0.6 },
+    metaDot: { width: 3, height: 3, borderRadius: 1.5, opacity: 0.3 },
+    rowArrow: { width: 24, height: 24, borderRadius: 8, justifyContent: 'center', alignItems: 'center', opacity: 0.5 },
 
-    loader: { padding: 50, alignItems: 'center' },
-    emptyBox: { padding: 50, alignItems: 'center', gap: 12 },
-    emptyTxt: { fontSize: 15, fontWeight: '700', opacity: 0.5 },
+    loader: { padding: 40, alignItems: 'center' },
+    emptyBox: { padding: 40, alignItems: 'center', gap: 12 },
+    emptyTxt: { fontSize: 14, fontWeight: '700', opacity: 0.4 },
 });
 
 export default DashboardScreen;

@@ -13,6 +13,7 @@ import {
     MessageSquare, Bell, IndianRupee, Users,
     ChevronRight, LogOut, Moon, Sun, User,
 } from 'lucide-react-native';
+import LiquidGlass from '../components/LiquidGlass';
 import { layout } from '../utils/layout';
 import { useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
@@ -30,18 +31,18 @@ const QuickTile = ({ icon: Icon, label, color, onPress, anim }) => {
                 onPressOut={pressOut}
                 activeOpacity={1}
             >
-                <BlurView
+                <LiquidGlass
                     intensity={g.blur}
                     tint={g.tint}
-                    experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                    style={[styles.tile, { borderColor: g.border }]}
+                    padding={14}
+                    borderRadius={18}
+                    style={{ alignItems: 'center', gap: 6 }}
                 >
-                    <View style={[styles.tileShimmer, { backgroundColor: g.shimmer }]} />
-                    <View style={[styles.tileIcon, { backgroundColor: color + '15' }]}>
-                        <Icon size={24} color={color} strokeWidth={2.5} />
+                    <View style={[styles.tileIcon, { backgroundColor: color + '12' }]}>
+                        <Icon size={20} color={color} strokeWidth={2.5} />
                     </View>
-                    <Text style={[styles.tileLabel, { color: colors.foreground }]}>{label}</Text>
-                </BlurView>
+                    <Text style={[styles.tileLabel, { color: colors.foreground }]} numberOfLines={1}>{label}</Text>
+                </LiquidGlass>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -72,8 +73,8 @@ const MoreScreen = ({ navigation }) => {
     const { user, logout } = useAuth();
     const g = colors.glass;
 
-    // Navigate to drawer screens (parent of tab navigator)
-    const goTo = (screen) => navigation.getParent()?.navigate(screen) ?? navigation.navigate(screen);
+    // Navigate to screens (handles bubbling to Drawer if screen not in Tabs)
+    const goTo = (screen) => navigation.navigate(screen);
 
     const quickItems = [
         { icon: Calendar, label: 'Appointments', color: colors.primary, nav: () => goTo('Appointments') },
@@ -90,6 +91,10 @@ const MoreScreen = ({ navigation }) => {
 
     return (
         <View style={[styles.screen, { backgroundColor: colors.background }]}>
+            {/* Rich Apple Background Layering */}
+            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '08' }]} />
+            <View style={[styles.bgGlowSecondary, { backgroundColor: colors.error + '05' }]} />
+
             <StatusBar barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'} />
             <ScrollView
                 contentContainerStyle={[styles.scroll, { paddingTop: layout.statusBarHeight + 24 }]}
@@ -97,15 +102,15 @@ const MoreScreen = ({ navigation }) => {
             >
                 {/* Header */}
                 <Animated.View style={staggerAnims[0] ? [styles.header, { opacity: staggerAnims[0].opacity, transform: [{ translateY: staggerAnims[0].translateY }] }] : styles.header}>
-                    <BlurView
+                    <LiquidGlass
                         intensity={g.blurStrong}
                         tint={g.tint}
-                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                        style={[styles.avatarCircle, { borderColor: g.border }]}
+                        padding={0}
+                        containerStyle={styles.avatarCircle}
+                        style={{ justifyContent: 'center', alignItems: 'center' }}
                     >
-                        <View style={styles.avatarGlow} />
                         <User size={24} color={colors.primary} strokeWidth={2.5} />
-                    </BlurView>
+                    </LiquidGlass>
                     <View style={{ flex: 1 }}>
                         <Text style={[styles.userName, { color: colors.foreground }]}>{user?.name || 'Healthcare Practitioner'}</Text>
                         <Text style={[styles.userRole, { color: colors.primary }]}>
@@ -134,37 +139,38 @@ const MoreScreen = ({ navigation }) => {
                 {/* Settings section */}
                 <Animated.Text style={staggerAnims[quickItems.length + 2] ? [styles.sectionLabel, { color: colors.mutedForeground, marginTop: 4, opacity: staggerAnims[quickItems.length + 2].opacity }] : styles.sectionLabel}>Settings</Animated.Text>
                 <Animated.View style={staggerAnims[quickItems.length + 3] ? { opacity: staggerAnims[quickItems.length + 3].opacity, transform: [{ translateY: staggerAnims[quickItems.length + 3].translateY }] } : {}}>
-                    <BlurView
+                    <LiquidGlass
                         intensity={g.blur}
                         tint={g.tint}
-                        experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                        style={[styles.glassCard, { borderColor: g.border }]}
+                        containerStyle={styles.glassCard}
+                        padding={0}
                     >
-                        <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
                         <NavRow icon={themeMode === 'dark' ? Moon : Sun}
                             label={`${themeMode === 'dark' ? 'MIDNIGHT' : 'DAYLIGHT'} THEME`}
                             color={themeMode === 'dark' ? '#818cf8' : '#f59e0b'}
                             onPress={toggleTheme} index={0} colors={colors} />
-                    </BlurView>
+                    </LiquidGlass>
                 </Animated.View>
 
                 {/* Logout */}
                 <Animated.View style={staggerAnims[quickItems.length + 4] ? { opacity: staggerAnims[quickItems.length + 4].opacity, transform: [{ translateY: staggerAnims[quickItems.length + 4].translateY }] } : {}}>
                     <TouchableOpacity onPress={logout} activeOpacity={0.8} style={styles.logoutRow}>
-                        <BlurView
+                        <LiquidGlass
                             intensity={g.blur}
                             tint={g.tint}
-                            experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                            style={[styles.logoutGlass, { borderColor: colors.error + '30' }]}
+                            containerStyle={styles.logoutGlass}
+                            padding={14}
+                            borderRadius={18}
+                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}
                         >
-                            <LogOut size={18} color={colors.error} strokeWidth={2.5} />
+                            <LogOut size={16} color={colors.error} strokeWidth={2.5} />
                             <Text style={[styles.logoutText, { color: colors.error }]}>Log Out of Session</Text>
-                        </BlurView>
+                        </LiquidGlass>
                     </TouchableOpacity>
                 </Animated.View>
 
                 <Text style={[styles.version, { color: colors.mutedForeground }]}>NyraAI Mobile v1.0.4</Text>
-                <View style={{ height: layout.tabBarHeight + 16 }} />
+                <View style={{ height: layout.tabBarHeight + 30 }} />
             </ScrollView>
         </View>
     );
@@ -174,38 +180,33 @@ const TILE_W = (layout.screenWidth - layout.px * 2 - 14) / 2;
 
 const styles = StyleSheet.create({
     screen: { flex: 1 },
+    bgGlow: { position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
+    bgGlowSecondary: { position: 'absolute', bottom: -150, right: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
     scroll: { paddingHorizontal: 20 },
-    header: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 32, paddingHorizontal: 4 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 28, paddingHorizontal: 4 },
     avatarCircle: {
-        width: 50, height: 50, borderRadius: 18, justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1.5, overflow: 'hidden',
-        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 16 }, android: { elevation: 8 } }),
+        width: 42, height: 42, borderRadius: 15, justifyContent: 'center', alignItems: 'center',
+        borderWidth: 1, overflow: 'hidden',
     },
     avatarGlow: { position: 'absolute', width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', top: -20, left: -20 },
-    userName: { fontSize: 22, fontWeight: '900', letterSpacing: -0.8 },
-    userRole: { fontSize: 13, fontWeight: '800', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
-    sectionLabel: { fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14, marginLeft: 4, opacity: 0.5 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 32 },
-    tileWrap: { width: (layout.screenWidth - 40 - 12) / 2 },
-    tile: {
-        borderRadius: 26, borderWidth: 1, overflow: 'hidden', padding: 20, gap: 14, alignItems: 'flex-start',
-        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.12, shadowRadius: 20 }, android: { elevation: 6 } }),
-    },
-    tileShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.7 },
-    tileIcon: { width: 48, height: 48, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
-    tileLabel: { fontSize: 14, fontWeight: '900', letterSpacing: -0.3, opacity: 0.8 },
+    userName: { fontSize: 18, fontWeight: '900', letterSpacing: -0.4 },
+    userRole: { fontSize: 11, fontWeight: '800', marginTop: 1, textTransform: 'uppercase', letterSpacing: 0.5 },
+    sectionLabel: { fontSize: 13, fontWeight: '900', marginBottom: 12, marginLeft: 4 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 },
+    tileWrap: { width: (layout.screenWidth - 40 - 10) / 2 },
+    tileIcon: { width: 38, height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    tileLabel: { fontSize: 12, fontWeight: '800', letterSpacing: -0.1, opacity: 0.8 },
     glassCard: {
-        borderRadius: 26, borderWidth: 1, overflow: 'hidden', marginBottom: 12,
-        ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 12 }, android: { elevation: 4 } }),
+        borderRadius: 22, borderWidth: 1, overflow: 'hidden', marginBottom: 12,
     },
     cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5 },
-    navRow: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
-    navIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    navLabel: { flex: 1, fontSize: 13, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.6 },
+    navRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
+    navIcon: { width: 38, height: 38, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    navLabel: { flex: 1, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.5 },
     logoutRow: { marginTop: 12 },
-    logoutGlass: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 18, borderRadius: 24, borderWidth: 1.5, overflow: 'hidden' },
-    logoutText: { fontSize: 16, fontWeight: '900', letterSpacing: -0.2 },
-    version: { textAlign: 'center', fontSize: 12, fontWeight: '800', marginTop: 24, opacity: 0.3, letterSpacing: 1 },
+    logoutGlass: { overflow: 'hidden' },
+    logoutText: { fontSize: 14, fontWeight: '900', letterSpacing: -0.1 },
+    version: { textAlign: 'center', fontSize: 11, fontWeight: '800', marginTop: 32, opacity: 0.2, letterSpacing: 1 },
 });
 
 export default MoreScreen;

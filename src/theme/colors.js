@@ -1,105 +1,109 @@
 // ─── NyraAI Color System — Rich Deep Palette ─────────────────────
 
 export const lightPalette = {
-    // Brand — richer royal blue
-    primary: '#2563eb',
-    primaryLight: '#3b82f6',
-    primaryDark: '#1d4ed8',
+    // Brand — Apple Royal Blue
+    primary: '#0066FF',
+    primaryLight: '#3385FF',
+    primaryDark: '#0052CC',
     primaryForeground: '#ffffff',
 
-    // Backgrounds — warm off-white with depth
-    background: '#f8fafc',
-    backgroundGradient: ['#eff6ff', '#f0f4ff', '#f5f3ff'],
-    foreground: '#0f172a',
+    // Backgrounds — Apple System Grey
+    background: '#F2F2f7',
+    backgroundGradient: ['#ffffff', '#F2F2f7', '#F2F2f7'],
+    foreground: '#1c1c1e',
 
-    // Cards — clear white with subtle shadow
-    card: 'rgba(255,255,255,0.88)',
-    cardForeground: '#0f172a',
-    cardBorder: 'rgba(226,232,240,0.80)',
+    // Cards
+    card: 'rgba(255,255,255,0.7)',
+    cardForeground: '#1c1c1e',
+    cardBorder: 'rgba(0,0,0,0.05)',
 
     // Text
-    mutedForeground: '#64748b',
-    secondary: '#e2e8f0',
-    secondaryForeground: '#334155',
-    muted: '#f1f5f9',
-    accentSoft: 'rgba(37,99,235,0.10)',
-    accentForeground: '#1d4ed8',
+    mutedForeground: '#8e8e93',
+    secondary: '#e5e5ea',
+    secondaryForeground: '#3a3a3c',
+    muted: '#f2f2f7',
+    accentSoft: 'rgba(0,102,255,0.08)',
+    accentForeground: '#0066FF',
 
     // Semantic
-    destructive: '#dc2626',
+    destructive: '#FF3B30',
     destructiveForeground: '#ffffff',
-    border: '#e2e8f0',
-    input: '#cbd5e1',
-    ring: '#2563eb',
+    border: '#d1d1d6',
+    input: '#c7c7cc',
+    ring: '#0066FF',
 
     // Status colours
-    success: '#059669',
-    warning: '#d97706',
-    info: '#2563eb',
-    error: '#dc2626',
+    success: '#34C759',
+    warning: '#FF9500',
+    info: '#007AFF',
+    error: '#FF3B30',
 
     // ── Liquid Glass Tokens ──────────────────────────────────────
     glass: {
-        bg: 'rgba(255,255,255,0.65)',
-        bgStrong: 'rgba(255,255,255,0.85)',
-        border: 'rgba(255,255,255,0.80)',
-        borderSubtle: 'rgba(203,213,225,0.50)',
-        shimmer: 'rgba(255,255,255,0.90)',
+        bg: 'rgba(255,255,255,0.75)',
+        bgStrong: 'rgba(255,255,255,0.92)',
+        border: 'rgba(255,255,255,1.0)',
+        borderSubtle: 'rgba(0,0,0,0.04)',
+        highlight: 'rgba(255,255,255,0.8)',
+        shimmer: 'rgba(255,255,255,0.7)',
         tint: 'light',
-        blur: 16,
-        blurStrong: 28,
-        shadow: 'rgba(15,23,68,0.12)',
+        blur: 25,
+        blurStrong: 40,
+        shadow: 'rgba(0,0,0,0.1)',
+        shadowDeep: 'rgba(0,0,0,0.15)',
     },
 };
 
 export const darkPalette = {
-    // Brand — electric blue on dark
-    primary: '#60a5fa',
-    primaryLight: '#93c5fd',
-    primaryDark: '#3b82f6',
-    primaryForeground: '#0f172a',
+    // Brand — Apple Royal Blue (Lighter for Dark Mode)
+    primary: '#0A84FF',
+    primaryLight: '#409CFF',
+    primaryDark: '#0066FF',
+    primaryForeground: '#ffffff',
 
-    // Backgrounds — dark navy, not pitch black
-    background: '#0c111d',
-    backgroundGradient: ['#0c111d', '#0f172a', '#131929'],
-    foreground: '#f1f5f9',
+    // Backgrounds — Apple Fitness Pure Black
+    background: '#000000',
+    backgroundGradient: ['#000000', '#0a0a0c', '#000000'],
+    foreground: '#ffffff',
 
-    // Cards
-    card: 'rgba(30,41,59,0.80)',
-    cardForeground: '#f1f5f9',
-    cardBorder: 'rgba(51,65,85,0.60)',
+    // Cards — iOS Dark Secondary
+    card: 'rgba(28,28,30,0.7)',
+    cardForeground: '#ffffff',
+    cardBorder: 'rgba(255,255,255,0.08)',
 
     // Text
-    mutedForeground: '#94a3b8',
-    secondary: 'rgba(255,255,255,0.05)',
-    secondaryForeground: '#cbd5e1',
-    muted: 'rgba(255,255,255,0.06)',
-    accentSoft: 'rgba(96,165,250,0.15)',
-    accentForeground: '#93c5fd',
+    mutedForeground: '#8e8e93',
+    secondary: 'rgba(255,255,255,0.1)',
+    secondaryForeground: '#d1d1d6',
+    muted: '#1c1c1e',
+    accentSoft: 'rgba(10,132,255,0.12)',
+    accentForeground: '#409CFF',
 
     // Semantic
-    destructive: '#f87171',
-    destructiveForeground: '#1a0505',
-    border: 'rgba(51,65,85,0.70)',
-    input: 'rgba(71,85,105,0.60)',
-    ring: '#60a5fa',
+    destructive: '#FF453A',
+    destructiveForeground: '#ffffff',
+    border: '#38383a',
+    input: '#3a3a3c',
+    ring: '#0A84FF',
 
     // Status colours
-    success: '#34d399',
-    warning: '#fbbf24',
-    info: '#60a5fa',
-    error: '#f87171',
+    success: '#30D158',
+    warning: '#FF9F0a',
+    info: '#0A84FF',
+    error: '#FF453A',
 
     // ── Liquid Glass Tokens ──────────────────────────────────────
     glass: {
-        bg: 'rgba(15,23,42,0.60)',
-        bgStrong: 'rgba(15,23,42,0.85)',
-        border: 'rgba(255,255,255,0.10)',
+        bg: 'rgba(28,28,30,0.75)',
+        bgStrong: 'rgba(28,28,30,0.95)',
+        border: 'rgba(255,255,255,0.12)',
         borderSubtle: 'rgba(255,255,255,0.06)',
-        shimmer: 'rgba(255,255,255,0.08)',
+        highlight: 'rgba(255,255,255,0.08)',
+        shimmer: 'rgba(255,255,255,0.06)',
         tint: 'dark',
-        blur: 24,
-        blurStrong: 40,
-        shadow: 'rgba(0,0,0,0.60)',
+        blur: 35,
+        blurStrong: 55,
+        shadow: 'rgba(0,0,0,0.5)',
+        shadowDeep: 'rgba(0,0,0,1.0)',
     },
 };

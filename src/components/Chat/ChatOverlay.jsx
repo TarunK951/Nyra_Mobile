@@ -5,8 +5,8 @@ import {
     ActivityIndicator, Modal, SafeAreaView, Image, Animated
 } from 'react-native';
 import {
-    X, Send, Sparkles, PhoneCall, MessageSquare,
-    User, ChevronRight, LayoutDashboard
+    X, Send, Zap, PhoneCall, MessageSquare,
+    User, ChevronRight, LayoutDashboard, Bot,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../theme/ThemeContext';
@@ -44,7 +44,7 @@ export const NyraAvatar = ({ size = 44, color }) => {
     return (
         <Animated.View style={{ transform: [{ scale: pulse }] }}>
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                <Sparkles size={size} color={color || '#7c3aed'} />
+                <Zap size={size} color={color || '#7c3aed'} fill={color || '#7c3aed'} />
             </Animated.View>
         </Animated.View>
     );
@@ -56,8 +56,8 @@ const MessageBubble = ({ message, colors, onActionPress }) => {
     return (
         <View style={[styles.messageRow, isAi ? styles.aiRow : styles.userRow]}>
             {isAi && (
-                <View style={[styles.avatarSmall, { backgroundColor: colors.accentSoft || '#ede9fe' }]}>
-                    <Sparkles size={16} color={colors.primary} />
+                <View style={[styles.avatarSmall, { backgroundColor: colors.primary + '15' }]}>
+                    <Zap size={14} color={colors.primary} fill={colors.primary} />
                 </View>
             )}
             <View style={styles.bubbleCol}>
@@ -411,8 +411,8 @@ const ChatOverlay = ({ visible, onClose, currentScreen }) => {
                     {/* ── Header ── */}
                     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
                         <View style={styles.headerLeft}>
-                            <View style={[styles.avatarHeader, { backgroundColor: colors.accentSoft || '#ede9fe' }]}>
-                                <Sparkles size={22} color={colors.primary} />
+                            <View style={[styles.avatarHeader, { backgroundColor: colors.primary + '15' }]}>
+                                <Zap size={20} color={colors.primary} fill={colors.primary} />
                             </View>
                             <View>
                                 <Text style={[styles.headerTitle, { color: colors.foreground }]}>Nyra AI Assistant</Text>
@@ -462,7 +462,7 @@ const ChatOverlay = ({ visible, onClose, currentScreen }) => {
                                     style={[styles.chip, { backgroundColor: colors.muted, borderColor: colors.border }]}
                                     onPress={() => handleSend(chip)}
                                 >
-                                    <Sparkles size={12} color={colors.primary} style={{ marginRight: 5 }} />
+                                    <Zap size={10} color={colors.primary} fill={colors.primary} style={{ marginRight: 5 }} />
                                     <Text style={[styles.chipText, { color: colors.foreground }]}>{chip}</Text>
                                 </TouchableOpacity>
                             ))}
@@ -522,13 +522,13 @@ const styles = StyleSheet.create({
     aiRow: { alignSelf: 'flex-start' },
     userRow: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
     avatarSmall: {
-        width: 30, height: 30, borderRadius: 15,
+        width: 28, height: 28, borderRadius: 14,
         justifyContent: 'center', alignItems: 'center',
-        marginRight: 8, marginTop: 2,
+        marginRight: 10, marginTop: 2,
     },
     bubbleCol: { flex: 1 },
-    bubble: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10 },
-    bubbleText: { fontSize: 14, lineHeight: 21 },
+    bubble: { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
+    bubbleText: { fontSize: 13.5, lineHeight: 20 },
 
     // Actions
     actionsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
