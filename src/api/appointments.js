@@ -15,6 +15,8 @@ export const appointmentApi = {
     reschedule: (id, data) => apiClient.post(`/api/appointments/${id}/reschedule`, data),
     getRescheduleHistory: (id) => apiClient.get(`/api/appointments/${id}/reschedule-history`),
     getReminderDetails: (id) => apiClient.get(`/api/appointments/${id}/reminder-details`),
+    testReminder: (id) => apiClient.post(`/api/appointments/${id}/test-reminder`),
+    testFeedback: (id) => apiClient.post(`/api/appointments/${id}/test-feedback`),
 };
 
 export const queueApi = {

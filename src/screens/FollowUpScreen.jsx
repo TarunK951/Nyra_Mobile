@@ -176,7 +176,7 @@ const CallRow = ({ item, colors, onPress, onRedial, anim }) => {
                             )}
                         </View>
                         <Text style={[styles.phone, { color: colors.mutedForeground }]}>{getPhone(item) || 'Unknown Identity'}</Text>
-                        <div style={styles.metaRow}>
+                        <View style={styles.metaRow}>
                             {!!type && (
                                 <View style={[styles.pill, { backgroundColor: typeClr + '08', borderColor: typeClr + '20' }]}>
                                     <Text style={[styles.pillTxt, { color: typeClr }]}>{type.replace('_', ' ')}</Text>
@@ -185,7 +185,7 @@ const CallRow = ({ item, colors, onPress, onRedial, anim }) => {
                             <View style={[styles.pill, { backgroundColor: statusClr + '08', borderColor: statusClr + '20' }]}>
                                 <Text style={[styles.pillTxt, { color: statusClr }]}>{status}</Text>
                             </View>
-                        </div>
+                        </View>
                     </View>
                     <View style={styles.actionCol}>
                         <TouchableOpacity onPress={onRedial} style={[styles.redialBtn, { backgroundColor: colors.primary + '10' }]} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>

@@ -7,13 +7,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
 import {
-    LayoutDashboard, Users, Zap, Calendar, MoreHorizontal,
+    LayoutDashboard, Users, Zap, Calendar, Stethoscope,
 } from 'lucide-react-native';
 import LiquidGlass from '../components/LiquidGlass';
 import DashboardScreen from '../screens/DashboardScreen';
 import PatientsNavigator from './PatientsNavigator';
 import AppointmentsNavigator from './AppointmentsNavigator';
-import MoreScreen from '../screens/MoreScreen';
+import DoctorsNavigator from './DoctorsNavigator';
 import { useTheme } from '../theme/ThemeContext';
 import { useChat } from '../components/Chat/ChatContext';
 import { layout } from '../utils/layout';
@@ -129,13 +129,13 @@ const GlassTabBar = ({ state, descriptors, navigation, colors, openChat }) => {
                             Home: 'Home',
                             Patients: 'Patients',
                             Appointments: 'Schedule',
-                            More: 'More',
+                            Doctors: 'Doctors',
                         };
                         const IconMap = {
                             Home: LayoutDashboard,
                             Patients: Users,
                             Appointments: Calendar,
-                            More: MoreHorizontal,
+                            Doctors: Stethoscope,
                         };
                         const Icon = IconMap[route.name] ?? LayoutDashboard;
                         const label = options.tabBarLabel ?? labelMap[route.name] ?? route.name;
@@ -181,7 +181,7 @@ const TabNavigator = () => {
                 listeners={{ tabPress: (e) => { e.preventDefault(); openChat?.(); } }}
             />
             <Tab.Screen name="Appointments" component={AppointmentsNavigator} />
-            <Tab.Screen name="More" component={MoreScreen} />
+            <Tab.Screen name="Doctors" component={DoctorsNavigator} />
         </Tab.Navigator>
     );
 };

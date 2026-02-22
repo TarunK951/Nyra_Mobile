@@ -190,7 +190,7 @@ const DashboardScreen = ({ navigation }) => {
 
                     <View style={styles.headerRight}>
                         <TouchableOpacity
-                            onPress={() => navigation.navigate('More')}
+                            onPress={() => navigation.navigate('Conversations')}
                             activeOpacity={0.7}
                             style={styles.headerIconBtn}
                         >
@@ -235,7 +235,7 @@ const DashboardScreen = ({ navigation }) => {
                     <QuickAction icon={Users} label="Patients" color="#7c3aed" colors={colors}
                         onPress={() => navigation.navigate('Patients')} />
                     <QuickAction icon={Activity} label="Calls" color="#059669" colors={colors}
-                        onPress={() => navigation.navigate('More')} />
+                        onPress={() => navigation.navigate('Conversations')} />
                 </View>
 
                 {/* Recent Patients */}
