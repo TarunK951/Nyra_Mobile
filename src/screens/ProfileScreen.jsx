@@ -57,8 +57,12 @@ const ProfileScreen = () => {
 
     return (
         <View style={[styles.screen, { backgroundColor: colors.background }]}>
+            {/* Rich Apple Background Layering */}
+            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '10' }]} />
+            <View style={[styles.bgGlowSecondary, { backgroundColor: '#a855f708' }]} />
+
             <ScrollView
-                contentContainerStyle={[styles.scroll, { paddingTop: layout.statusBarHeight + 20 }]}
+                contentContainerStyle={[styles.scroll, { paddingTop: layout.statusBarHeight + 30 }]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Hero avatar */}
@@ -70,17 +74,15 @@ const ProfileScreen = () => {
                         style={[styles.avatarWrap, { borderColor: g.border }]}
                     >
                         <View style={styles.avatarGlow} />
-                        <View style={[styles.avatarInner, { backgroundColor: colors.primary + '15' }]}>
+                        <View style={[styles.avatarInner, { backgroundColor: colors.primary + '12' }]}>
                             <User size={48} color={colors.primary} strokeWidth={2.5} />
                         </View>
                     </BlurView>
                     <View style={{ alignItems: 'center' }}>
                         <Text style={[styles.name, { color: colors.foreground }]}>{user?.name || 'Practitioner Name'}</Text>
-                        <View style={[styles.rolePill, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30', borderWidth: 1 }]}>
-                            <Text style={[styles.roleText, { color: colors.primary }]}>
-                                {(user?.role || 'Healthcare Professional').replace(/_/g, ' ')}
-                            </Text>
-                        </View>
+                        <Text style={[styles.roleSub, { color: colors.primary }]}>
+                            {(user?.role || 'Healthcare Professional').replace(/_/g, ' ').toUpperCase()}
+                        </Text>
                     </View>
                 </Animated.View>
 
@@ -112,7 +114,7 @@ const ProfileScreen = () => {
                     >
                         <View style={[styles.cardShimmer, { backgroundColor: g.shimmer }]} />
                         <View style={styles.themeRow}>
-                            <View style={[styles.themeIcon, { backgroundColor: themeMode === 'dark' ? '#5c67f220' : '#f59e0b20' }]}>
+                            <View style={[styles.themeIcon, { backgroundColor: themeMode === 'dark' ? '#5c67f215' : '#f59e0b15' }]}>
                                 {themeMode === 'dark'
                                     ? <Moon size={18} color="#818cf8" strokeWidth={2.5} />
                                     : <Sun size={18} color="#f59e0b" strokeWidth={2.5} />
@@ -140,18 +142,18 @@ const ProfileScreen = () => {
                             intensity={g.blur}
                             tint={g.tint}
                             experimentalBlurMethod={Platform.OS === 'android' ? 'blur' : undefined}
-                            style={[styles.logoutCard, { borderColor: colors.error + '40' }]}
+                            style={[styles.logoutCard, { borderColor: colors.error + '30' }]}
                         >
                             <LogOut size={20} color={colors.error} strokeWidth={2.5} />
-                            <Text style={[styles.logoutText, { color: colors.error }]}>Log Out of Session</Text>
+                            <Text style={[styles.logoutText, { color: colors.error }]}>Log Out Session</Text>
                         </BlurView>
                     </TouchableOpacity>
                 </Animated.View>
 
                 <Text style={[styles.version, { color: colors.mutedForeground }]}>
-                    NyraAI Mobile v1.0.4
+                    NYRAAI MOBILE • VERSION 1.0.4
                 </Text>
-                <View style={{ height: layout.tabBarHeight + 20 }} />
+                <View style={{ height: layout.tabBarHeight + 40 }} />
             </ScrollView>
         </View>
     );
@@ -159,30 +161,31 @@ const ProfileScreen = () => {
 
 const styles = StyleSheet.create({
     screen: { flex: 1 },
+    bgGlow: { position: 'absolute', top: -100, right: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
+    bgGlowSecondary: { position: 'absolute', bottom: -150, left: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
     scroll: { paddingHorizontal: 20 },
     avatarWrap: {
-        width: 100, height: 100, borderRadius: 36, overflow: 'hidden', borderWidth: 1.5,
+        width: 104, height: 104, borderRadius: 38, overflow: 'hidden', borderWidth: 1.5,
         ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24 }, android: { elevation: 12 } }),
     },
-    avatarGlow: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.1)', top: -30, left: -30 },
+    avatarGlow: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.08)', top: -30, left: -30 },
     avatarInner: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    name: { fontSize: 28, fontWeight: '900', letterSpacing: -1, textAlign: 'center' },
-    rolePill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginTop: 8 },
-    roleText: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+    name: { fontSize: 32, fontWeight: '900', letterSpacing: -1.2, textAlign: 'center' },
+    roleSub: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginTop: 4, opacity: 0.8 },
 
     glassCard: {
-        borderRadius: 28, borderWidth: 1, overflow: 'hidden', marginBottom: 14,
+        borderRadius: 28, borderWidth: 1, overflow: 'hidden', marginBottom: 16,
         ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 20 }, android: { elevation: 6 } }),
     },
     cardShimmer: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.8 },
     menuRow: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
     menuIcon: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    menuLabel: { flex: 1, fontSize: 16, fontWeight: '800', opacity: 0.8 },
+    menuLabel: { flex: 1, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
 
-    themeCard: { borderRadius: 24, borderWidth: 1, overflow: 'hidden', marginBottom: 14 },
+    themeCard: { borderRadius: 24, borderWidth: 1, overflow: 'hidden', marginBottom: 16 },
     themeRow: { flexDirection: 'row', alignItems: 'center', padding: 18, gap: 14 },
     themeIcon: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    themeLabel: { flex: 1, fontSize: 13, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.6 },
+    themeLabel: { flex: 1, fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.6 },
     switchTrack: { width: 50, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3 },
     switchThumb: {
         width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
@@ -193,8 +196,8 @@ const styles = StyleSheet.create({
         borderRadius: 24, borderWidth: 1.5, overflow: 'hidden',
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 18,
     },
-    logoutText: { fontSize: 16, fontWeight: '900', letterSpacing: -0.2 },
-    version: { textAlign: 'center', fontSize: 12, fontWeight: '700', marginTop: 24, opacity: 0.3, letterSpacing: 1 },
+    logoutText: { fontSize: 17, fontWeight: '900', letterSpacing: -0.4 },
+    version: { textAlign: 'center', fontSize: 10, fontWeight: '800', marginTop: 32, opacity: 0.25, letterSpacing: 2 },
 });
 
 export default ProfileScreen;

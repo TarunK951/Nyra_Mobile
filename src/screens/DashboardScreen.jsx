@@ -180,46 +180,34 @@ const DashboardScreen = ({ navigation }) => {
                 <Animated.View style={[styles.header, { opacity: headerOp }]}>
                     <View style={styles.headerLeft}>
                         <TouchableOpacity
-                            onPress={() => navigation.navigate('More')}
+                            onPress={() => navigation.navigate('Profile')}
                             activeOpacity={0.8}
-                            style={[styles.avatarBox, { backgroundColor: colors.primary + '12', borderColor: colors.primary + '20' }]}
+                            style={[styles.avatarBox, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '20' }]}
                         >
-                            <User size={20} color={colors.primary} strokeWidth={2.5} />
+                            <User size={26} color={colors.primary} strokeWidth={2.5} />
                         </TouchableOpacity>
                         <View>
                             <Text style={[styles.greeting, { color: colors.primary }]}>{greetStr},</Text>
-                            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{firstName} ✨</Text>
+                            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{firstName}</Text>
                         </View>
                     </View>
 
                     <View style={styles.headerRight}>
                         <TouchableOpacity
-                            onPress={() => navigation.navigate('ReminderCalls')}
-                            activeOpacity={0.8}
+                            onPress={() => navigation.navigate('More')}
+                            activeOpacity={0.7}
                             style={styles.headerIconBtn}
                         >
-                            <LiquidGlass
-                                intensity={g.blurStrong} tint={g.tint}
-                                padding={0}
-                                borderRadius={15}
-                                style={styles.iconBlur}
-                            >
-                                <History size={20} color={colors.foreground} strokeWidth={2.5} />
+                            <LiquidGlass intensity={20} tint={g.tint} style={styles.iconBlur} padding={0} borderRadius={15}>
+                                <History size={22} color={colors.foreground} strokeWidth={2.2} />
                             </LiquidGlass>
                         </TouchableOpacity>
-
                         <TouchableOpacity
-                            onPress={() => navigation.navigate('More')}
-                            activeOpacity={0.8}
+                            activeOpacity={0.7}
                             style={styles.headerIconBtn}
                         >
-                            <LiquidGlass
-                                intensity={g.blurStrong} tint={g.tint}
-                                padding={0}
-                                borderRadius={15}
-                                style={styles.iconBlur}
-                            >
-                                <Bell size={20} color={colors.foreground} strokeWidth={2.5} />
+                            <LiquidGlass intensity={20} tint={g.tint} style={styles.iconBlur} padding={0} borderRadius={15}>
+                                <Bell size={22} color={colors.foreground} strokeWidth={2.2} />
                                 <View style={[styles.notifDot, { backgroundColor: colors.error }]} />
                             </LiquidGlass>
                         </TouchableOpacity>
@@ -301,15 +289,15 @@ const styles = StyleSheet.create({
     bgGlowSecondary: { position: 'absolute', bottom: -150, left: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
     scroll: { paddingHorizontal: 20 },
 
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    avatarBox: { width: 42, height: 42, borderRadius: 15, borderWith: 1, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-    greeting: { fontSize: 13, fontWeight: '800', marginBottom: 0, textTransform: 'uppercase', letterSpacing: 1 },
-    name: { fontSize: 26, fontWeight: '900', letterSpacing: -0.6 },
-    headerRight: { flexDirection: 'row', gap: 10 },
-    headerIconBtn: { borderRadius: 15, overflow: 'hidden' },
-    iconBlur: { width: 42, height: 42, justifyContent: 'center', alignItems: 'center' },
-    notifDot: { position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: 3, borderWidth: 1.2, borderColor: '#fff' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
+    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+    avatarBox: { width: 52, height: 52, borderRadius: 18, borderWith: 1, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+    greeting: { fontSize: 11, fontWeight: '800', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.8 },
+    name: { fontSize: 28, fontWeight: '900', letterSpacing: -1 },
+    headerRight: { flexDirection: 'row', gap: 12 },
+    headerIconBtn: { borderRadius: 16, overflow: 'hidden' },
+    iconBlur: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+    notifDot: { position: 'absolute', top: 13, right: 13, width: 7, height: 7, borderRadius: 3.5, borderWidth: 1.5, borderColor: '#000' },
 
     errBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,

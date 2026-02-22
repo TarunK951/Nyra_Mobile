@@ -6,8 +6,9 @@ import {
 } from 'react-native';
 import {
     X, Send, Zap, PhoneCall, MessageSquare,
-    User, ChevronRight, LayoutDashboard, Bot,
+    User, ChevronRight, LayoutDashboard, Bot, History
 } from 'lucide-react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../theme/ThemeContext';
 import { aiApi } from '../../api/ai';
@@ -25,27 +26,26 @@ const { width } = Dimensions.get('window');
 // ─── Animated FAB Brain Avatar ────────────────
 export const NyraAvatar = ({ size = 44, color }) => {
     const pulse = useRef(new Animated.Value(1)).current;
-    const rotate = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(pulse, { toValue: 1.18, duration: 900, useNativeDriver: true }),
-                Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+                Animated.timing(pulse, { toValue: 1.08, duration: 2500, useNativeDriver: true }),
+                Animated.timing(pulse, { toValue: 1, duration: 2500, useNativeDriver: true }),
             ])
-        ).start();
-        Animated.loop(
-            Animated.timing(rotate, { toValue: 1, duration: 8000, useNativeDriver: true })
         ).start();
     }, []);
 
-    const spin = rotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-
     return (
-        <Animated.View style={{ transform: [{ scale: pulse }] }}>
-            <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                <Zap size={size} color={color || '#7c3aed'} fill={color || '#7c3aed'} />
-            </Animated.View>
+        <Animated.View style={{ transform: [{ scale: pulse }], width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: '#000' }}>
+            <Video
+                source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay
+                isLooping
+                isMuted
+            />
         </Animated.View>
     );
 };
@@ -56,8 +56,15 @@ const MessageBubble = ({ message, colors, onActionPress }) => {
     return (
         <View style={[styles.messageRow, isAi ? styles.aiRow : styles.userRow]}>
             {isAi && (
-                <View style={[styles.avatarSmall, { backgroundColor: colors.primary + '15' }]}>
-                    <Zap size={14} color={colors.primary} fill={colors.primary} />
+                <View style={[styles.avatarSmall, { backgroundColor: '#000' }]}>
+                    <Video
+                        source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode={ResizeMode.COVER}
+                        shouldPlay
+                        isLooping
+                        isMuted
+                    />
                 </View>
             )}
             <View style={styles.bubbleCol}>
@@ -409,21 +416,19 @@ const ChatOverlay = ({ visible, onClose, currentScreen }) => {
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
 
                     {/* ── Header ── */}
-                    <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+                    <View style={[styles.header, { borderBottomColor: colors.border + '12' }]}>
                         <View style={styles.headerLeft}>
-                            <View style={[styles.avatarHeader, { backgroundColor: colors.primary + '15' }]}>
-                                <Zap size={20} color={colors.primary} fill={colors.primary} />
-                            </View>
-                            <View>
-                                <Text style={[styles.headerTitle, { color: colors.foreground }]}>Nyra AI Assistant</Text>
+                            <NyraAvatar size={44} />
+                            <View style={{ marginLeft: 6 }}>
+                                <Text style={[styles.headerTitle, { color: colors.foreground }]}>Nyra AI</Text>
                                 <View style={styles.statusRow}>
-                                    <View style={styles.statusDot} />
-                                    <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>Stable Reasoning v4.6.03</Text>
+                                    <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
+                                    <Text style={[styles.headerSub, { color: colors.mutedForeground, opacity: 0.8 }]}>CLINICAL CO-PILOT</Text>
                                 </View>
                             </View>
                         </View>
-                        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                            <X size={22} color={colors.foreground} />
+                        <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.muted }]}>
+                            <X size={20} color={colors.foreground} strokeWidth={3} />
                         </TouchableOpacity>
                     </View>
 
@@ -459,11 +464,10 @@ const ChatOverlay = ({ visible, onClose, currentScreen }) => {
                             {getSuggestionChips(user?.role || 'DOCTOR').map((chip, i) => (
                                 <TouchableOpacity
                                     key={i}
-                                    style={[styles.chip, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                                    style={[styles.chip, { backgroundColor: colors.primary + '12', borderColor: colors.primary + '20' }]}
                                     onPress={() => handleSend(chip)}
                                 >
-                                    <Zap size={10} color={colors.primary} fill={colors.primary} style={{ marginRight: 5 }} />
-                                    <Text style={[styles.chipText, { color: colors.foreground }]}>{chip}</Text>
+                                    <Text style={[styles.chipText, { color: colors.primary }]}>{chip}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -503,28 +507,24 @@ const styles = StyleSheet.create({
     // Header
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
+        paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1,
     },
-    headerLeft: { flexDirection: 'row', alignItems: 'center' },
-    avatarHeader: {
-        width: 40, height: 40, borderRadius: 20,
-        justifyContent: 'center', alignItems: 'center', marginRight: 12,
-    },
-    headerTitle: { fontSize: 16, fontWeight: '700' },
-    statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-    statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981', marginRight: 5 },
-    headerSub: { fontSize: 11 },
-    closeBtn: { padding: 6 },
+    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    headerTitle: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
+    statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: -1 },
+    statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
+    headerSub: { fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+    closeBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
 
     // Messages
-    scrollContent: { padding: 16, paddingBottom: 8 },
+    scrollContent: { paddingHorizontal: 16, paddingVertical: 20 },
     messageRow: { flexDirection: 'row', marginBottom: 18, maxWidth: '88%' },
     aiRow: { alignSelf: 'flex-start' },
     userRow: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
     avatarSmall: {
-        width: 28, height: 28, borderRadius: 14,
-        justifyContent: 'center', alignItems: 'center',
-        marginRight: 10, marginTop: 2,
+        width: 24, height: 24, borderRadius: 12,
+        overflow: 'hidden',
+        marginRight: 10, marginTop: 4,
     },
     bubbleCol: { flex: 1 },
     bubble: { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },

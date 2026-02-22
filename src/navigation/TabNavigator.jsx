@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
+import { Video, ResizeMode } from 'expo-av';
 import {
     LayoutDashboard, Users, Zap, Calendar, MoreHorizontal,
 } from 'lucide-react-native';
@@ -43,10 +44,15 @@ const NyraFab = ({ colors }) => {
                     containerStyle={styles.fabGlass}
                     padding={0}
                 >
-                    <View style={[styles.fabCore, { backgroundColor: colors.primary }]}>
-                        <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                            <Zap size={24} color="#fff" strokeWidth={2.5} fill="#fff" />
-                        </Animated.View>
+                    <View style={[styles.fabCore, { backgroundColor: '#000' }]}>
+                        <Video
+                            source={{ uri: 'https://res.cloudinary.com/duh3toy4g/video/upload/v1770877221/grok-video-3d077b4f-a502-4a2f-83bb-6519bed21f5f_esrhms.mp4' }}
+                            style={styles.fabVideo}
+                            resizeMode={ResizeMode.COVER}
+                            shouldPlay
+                            isLooping
+                            isMuted
+                        />
                         <View style={styles.fabGlowInner} />
                     </View>
                 </LiquidGlass>
@@ -225,13 +231,16 @@ const styles = StyleSheet.create({
         }),
     },
     fabCore: {
-        flex: 1, margin: 4, borderRadius: 23,
+        flex: 1, margin: 2, borderRadius: 25,
         justifyContent: 'center', alignItems: 'center',
         position: 'relative', overflow: 'hidden',
     },
+    fabVideo: {
+        width: '100%', height: '100%',
+    },
     fabGlowInner: {
         position: 'absolute', width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.2)', top: -10, right: -10,
+        backgroundColor: 'rgba(255,255,255,0.1)', top: -10, right: -10,
     },
 });
 

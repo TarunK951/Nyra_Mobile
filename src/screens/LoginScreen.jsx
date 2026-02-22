@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import LiquidButton from '../components/LiquidButton';
 import LiquidGlass from '../components/LiquidGlass';
-import { Mail, Lock, ArrowRight, Sparkles, UserCheck } from 'lucide-react-native';
+import { Mail, Lock, ArrowRight, Bot, UserCheck } from 'lucide-react-native';
 import { useFadeIn, useSlideUp, useStagger, useScalePressAnim, SPRING } from '../utils/animations';
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -143,7 +143,7 @@ const LoginScreen = () => {
                     >
                         <View style={styles.logoGlow} />
                         <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                            <Sparkles size={38} color={colors.primary} strokeWidth={2.5} />
+                            <Bot size={38} color={colors.primary} strokeWidth={2.5} />
                         </Animated.View>
                     </BlurView>
                     <Text style={[styles.title, { color: colors.foreground }]}>NyraAI</Text>

@@ -212,7 +212,7 @@ const DrawerNavigator = () => {
 
             {/* Config Section */}
             <Drawer.Screen
-                name="ProfileDrawer"
+                name="Profile"
                 component={ProfileScreen}
                 options={{
                     title: 'Settings & Profile',
