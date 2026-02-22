@@ -183,7 +183,7 @@ const DashboardScreen = ({ navigation }) => {
                         <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{firstName} ✨</Text>
                     </View>
                     <TouchableOpacity
-                        onPress={() => navigation?.getParent()?.navigate('More')}
+                        onPress={() => navigation.navigate('More')}
                         activeOpacity={0.8}
                         style={[styles.bellWrap, { borderColor: g.border }]}
                     >
@@ -219,17 +219,17 @@ const DashboardScreen = ({ navigation }) => {
                 <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
                 <View style={styles.qaRow}>
                     <QuickAction icon={Calendar} label="Schedule" color="#2563eb" colors={colors}
-                        onPress={() => navigation?.getParent()?.navigate('Appointments')} />
+                        onPress={() => navigation.navigate('Appointments')} />
                     <QuickAction icon={Users} label="Patients" color="#7c3aed" colors={colors}
-                        onPress={() => navigation?.getParent()?.navigate('Patients')} />
+                        onPress={() => navigation.navigate('Patients')} />
                     <QuickAction icon={Activity} label="Calls" color="#059669" colors={colors}
-                        onPress={() => navigation?.getParent()?.navigate('More')} />
+                        onPress={() => navigation.navigate('More')} />
                 </View>
 
                 {/* Recent Patients */}
                 <View style={styles.sectionHeader}>
                     <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recent Patients</Text>
-                    <TouchableOpacity onPress={() => navigation?.getParent()?.navigate('Patients')}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Patients')}>
                         <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
                     </TouchableOpacity>
                 </View>
@@ -248,9 +248,9 @@ const DashboardScreen = ({ navigation }) => {
                                 key={p.id ?? i}
                                 patient={p} index={i} colors={colors}
                                 anim={staggerAnims[Math.min(i, staggerAnims.length - 1)]}
-                                onPress={() => navigation?.getParent()?.navigate('Patients', {
+                                onPress={() => navigation.navigate('Patients', {
                                     screen: 'PatientDetail',
-                                    params: { patientId: p.id, patient: p },
+                                    params: { patientId: p.id || p._id, patient: p },
                                 })}
                             />
                         ))

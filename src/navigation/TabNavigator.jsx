@@ -81,7 +81,7 @@ const GlassTabBar = ({ state, descriptors, navigation, colors }) => {
     const routes = state.routes;
 
     return (
-        <View style={styles.barContainer} pointerEvents="box-none">
+        <View style={[styles.barContainer, { pointerEvents: 'box-none' }]}>
             <BlurView
                 intensity={colors.glass.blurStrong}
                 tint={colors.glass.tint}

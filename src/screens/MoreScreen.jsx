@@ -75,8 +75,6 @@ const MoreScreen = ({ navigation }) => {
     // Navigate to drawer screens (parent of tab navigator)
     const goTo = (screen) => navigation.getParent()?.navigate(screen) ?? navigation.navigate(screen);
 
-    const staggerAnims = useStagger(quickItems.length + 4, 60);
-
     const quickItems = [
         { icon: Calendar, label: 'Appointments', color: colors.primary, nav: () => goTo('Appointments') },
         { icon: Stethoscope, label: 'Doctors', color: '#8b5cf6', nav: () => goTo('Doctors') },
@@ -85,8 +83,10 @@ const MoreScreen = ({ navigation }) => {
         { icon: MessageSquare, label: 'Conversations', color: '#3b82f6', nav: () => goTo('Conversations') },
         { icon: Bell, label: 'Reminders', color: '#ef4444', nav: () => goTo('ReminderCalls') },
         { icon: IndianRupee, label: 'Revenue', color: '#059669', nav: () => goTo('Revenue') },
-        { icon: Users, label: 'Patients', color: '#0ea5e9', nav: () => navigation.navigate('Patients') },
+        { icon: Users, label: 'Patients', color: '#0ea5e9', nav: () => goTo('Patients') },
     ];
+
+    const staggerAnims = useStagger(quickItems.length + 4, 60);
 
     return (
         <View style={[styles.screen, { backgroundColor: colors.background }]}>
