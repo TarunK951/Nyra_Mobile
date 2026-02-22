@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     Users, Calendar, TrendingUp, ChevronRight,
     Bell, Stethoscope, Activity, AlertCircle, User,
-    History,
+    History, Menu,
 } from 'lucide-react-native';
 import { patientApi } from '../api/patients';
 import { appointmentApi } from '../api/appointments';
@@ -160,10 +160,6 @@ const DashboardScreen = ({ navigation }) => {
 
     return (
         <View style={[styles.screen, { backgroundColor: colors.background }]}>
-            {/* Rich Apple Background Layering */}
-            <View style={[styles.bgGlow, { backgroundColor: colors.primary + '08' }]} />
-            <View style={[styles.bgGlowSecondary, { backgroundColor: colors.success + '05' }]} />
-
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -180,15 +176,15 @@ const DashboardScreen = ({ navigation }) => {
                 <Animated.View style={[styles.header, { opacity: headerOp }]}>
                     <View style={styles.headerLeft}>
                         <TouchableOpacity
-                            onPress={() => navigation.navigate('Profile')}
+                            onPress={() => navigation.openDrawer()}
                             activeOpacity={0.8}
-                            style={[styles.avatarBox, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '20' }]}
+                            style={[styles.menuBtn, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '20' }]}
                         >
-                            <User size={26} color={colors.primary} strokeWidth={2.5} />
+                            <Menu size={26} color={colors.primary} strokeWidth={2.5} />
                         </TouchableOpacity>
                         <View>
-                            <Text style={[styles.greeting, { color: colors.primary }]}>{greetStr},</Text>
-                            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{firstName}</Text>
+                            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{user?.name?.split(' ')[0] || 'Doctor'}</Text>
+                            <Text style={[styles.greeting, { color: colors.mutedForeground, marginTop: 1 }]}>{user?.role?.replace('_', ' ') || 'HEALTHCARE'}</Text>
                         </View>
                     </View>
 
@@ -285,15 +281,14 @@ const DashboardScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     screen: { flex: 1 },
-    bgGlow: { position: 'absolute', top: -100, right: -100, width: 400, height: 400, borderRadius: 200, opacity: 0.6 },
-    bgGlowSecondary: { position: 'absolute', bottom: -150, left: -150, width: 500, height: 500, borderRadius: 250, opacity: 0.4 },
+    screen: { flex: 1 },
     scroll: { paddingHorizontal: 20 },
 
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
-    avatarBox: { width: 52, height: 52, borderRadius: 18, borderWith: 1, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-    greeting: { fontSize: 11, fontWeight: '800', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.8 },
-    name: { fontSize: 28, fontWeight: '900', letterSpacing: -1 },
+    menuBtn: { width: 52, height: 52, borderRadius: 18, borderWith: 1, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+    greeting: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, opacity: 0.6 },
+    name: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
     headerRight: { flexDirection: 'row', gap: 12 },
     headerIconBtn: { borderRadius: 16, overflow: 'hidden' },
     iconBlur: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },

@@ -85,7 +85,7 @@ const TabIcon = ({ Icon, focused, color }) => {
 };
 
 // ── Custom Glass Tab Bar ──────────────────────────────────────────
-const GlassTabBar = ({ state, descriptors, navigation, colors }) => {
+const GlassTabBar = ({ state, descriptors, navigation, colors, openChat }) => {
     const routes = state.routes;
 
     return (
@@ -94,7 +94,7 @@ const GlassTabBar = ({ state, descriptors, navigation, colors }) => {
                 intensity={colors.glass.blurStrong}
                 tint={colors.glass.tint}
                 padding={0}
-                containerStyle={styles.bar}
+                containerStyle={[styles.bar, { overflow: 'visible' }]}
             >
                 <View style={styles.tabRow}>
                     {routes.map((route, idx) => {
@@ -113,7 +113,10 @@ const GlassTabBar = ({ state, descriptors, navigation, colors }) => {
                             return (
                                 <TouchableOpacity
                                     key={route.key}
-                                    onPress={() => navigation.emit({ type: 'tabPress', target: route.key })}
+                                    onPress={() => {
+                                        navigation.emit({ type: 'tabPress', target: route.key });
+                                        openChat?.();
+                                    }}
                                     style={styles.fabSlot}
                                     activeOpacity={0.9}
                                 >
@@ -156,8 +159,8 @@ const GlassTabBar = ({ state, descriptors, navigation, colors }) => {
                         );
                     })}
                 </View>
-            </LiquidGlass>
-        </View>
+            </LiquidGlass >
+        </View >
     );
 };
 
@@ -167,7 +170,7 @@ const TabNavigator = () => {
 
     return (
         <Tab.Navigator
-            tabBar={(props) => <GlassTabBar {...props} colors={colors} />}
+            tabBar={(props) => <GlassTabBar {...props} colors={colors} openChat={openChat} />}
             screenOptions={{ headerShown: false }}
         >
             <Tab.Screen name="Home" component={DashboardScreen} />
