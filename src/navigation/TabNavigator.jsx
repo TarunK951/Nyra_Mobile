@@ -3,7 +3,7 @@ import { StyleSheet, View, Platform, Animated } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { LayoutDashboard, Users, MessageSquare, UserCircle, Sparkles } from 'lucide-react-native';
 import DashboardScreen from '../screens/DashboardScreen';
-import PatientListScreen from '../screens/PatientListScreen';
+import PatientsNavigator from './PatientsNavigator';
 import ProfileScreen from '../screens/ProfileScreen';
 import ConversationsNavigator from './ConversationsNavigator';
 import { useTheme } from '../theme/ThemeContext';
@@ -78,7 +78,7 @@ const TabNavigator = () => {
             })}
         >
             <Tab.Screen name="Overview" component={DashboardScreen} />
-            <Tab.Screen name="Patients" component={PatientListScreen} />
+            <Tab.Screen name="Patients" component={PatientsNavigator} />
 
             {/* ── Central Nyra AI FAB ── */}
             <Tab.Screen

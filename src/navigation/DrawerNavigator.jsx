@@ -9,7 +9,7 @@ import { View, Text, StyleSheet, Image } from 'react-native';
 import TabNavigator from './TabNavigator';
 import ModuleScreen from '../screens/ModuleScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import AppointmentsScreen from '../screens/AppointmentsScreen';
+import AppointmentsNavigator from './AppointmentsNavigator';
 import DoctorsNavigator from './DoctorsNavigator';
 import ConversationsNavigator from './ConversationsNavigator';
 import LiveCallsScreen from '../screens/LiveCallsScreen';
@@ -109,7 +109,7 @@ const DrawerNavigator = () => {
 
             <Drawer.Screen
                 name="Appointments"
-                component={AppointmentsScreen}
+                component={AppointmentsNavigator}
                 options={{
                     drawerIcon: ({ color, size }) => <Calendar size={size} color={color} />
                 }}

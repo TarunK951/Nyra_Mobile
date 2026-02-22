@@ -29,7 +29,7 @@ const StatusBadge = ({ status, colors }) => {
     );
 };
 
-const AppointmentCard = ({ item, colors }) => {
+const AppointmentCard = ({ item, colors, onPress }) => {
     const date = item.date || item.appointmentDate || item.scheduledAt;
     const formattedDate = date ? new Date(date).toLocaleDateString('en-IN', {
         day: '2-digit', month: 'short', year: 'numeric'
@@ -45,6 +45,7 @@ const AppointmentCard = ({ item, colors }) => {
         <TouchableOpacity
             activeOpacity={0.75}
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+            onPress={onPress}
         >
             <View style={styles.cardLeft}>
                 <View style={[styles.avatarBox, { backgroundColor: colors.accentSoft }]}>
@@ -76,7 +77,7 @@ const AppointmentCard = ({ item, colors }) => {
 
 const FILTERS = ['All', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
 
-const AppointmentsScreen = () => {
+const AppointmentsScreen = ({ navigation }) => {
     const { colors } = useTheme();
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -189,7 +190,7 @@ const AppointmentsScreen = () => {
                 <FlatList
                     data={filtered}
                     keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-                    renderItem={({ item }) => <AppointmentCard item={item} colors={colors} />}
+                    renderItem={({ item }) => <AppointmentCard item={item} colors={colors} onPress={() => navigation.navigate('AppointmentDetail', { appointmentId: item.id, appointment: item })} />}
                     contentContainerStyle={styles.list}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
