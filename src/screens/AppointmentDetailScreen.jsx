@@ -141,7 +141,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Glass Header */}
+            {/* Glass */}
             <BlurView
                 intensity={g.blurStrong}
                 tint={g.tint}
