@@ -202,6 +202,7 @@ const CallRow = ({ item, colors, onPress, onRedial, anim }) => {
 // ─── Screen ──────────────────────────────────────────────────────────────────
 const FollowUpScreen = ({ navigation }) => {
     const { colors } = useTheme();
+    const g = colors.glass;
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
