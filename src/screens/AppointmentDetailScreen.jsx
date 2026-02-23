@@ -163,7 +163,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchAppointment(); }} tintColor={colors.primary} />}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Hero date card */}
+                {/* Hero  */}
                 <Animated.View style={staggerAnims[0] ? { opacity: staggerAnims[0].opacity, transform: [{ translateY: staggerAnims[0].translateY }] } : {}}>
                     <BlurView
                         intensity={g.blurStrong}
